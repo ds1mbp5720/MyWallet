@@ -1,5 +1,5 @@
 {
   "name": "SMS 가계부 (SmsLedger)",
   "description": "문자메시지(SMS)와 연동하여 자동으로 지출 내역을 기록하는 Kotlin/Compose 기반 MVI 가계부 앱",
-  "requestFramePermissions": []
+  "requestFramePermissions": ["camera"]
 }

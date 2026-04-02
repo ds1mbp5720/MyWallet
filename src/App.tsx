@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useRef, ChangeEvent } from "react";
 import { 
   Smartphone, 
   Download, 
@@ -16,8 +16,14 @@ import {
   Wallet,
   BarChart3,
   List as ListIcon,
-  ChevronDown
+  ChevronDown,
+  Camera,
+  Loader2,
+  Check,
+  X,
+  Search
 } from "lucide-react";
+import { GoogleGenAI, Type } from "@google/genai";
 
 interface Transaction {
   id: number;
@@ -72,6 +78,13 @@ export default function App() {
   const [newCategory, setNewCategory] = useState("식비");
   const [newType, setNewType] = useState<"income" | "expense">("expense");
   const [filterCategory, setFilterCategory] = useState("전체");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isOcrLoading, setIsOcrLoading] = useState(false);
+  const [fileMode, setFileMode] = useState<"ai" | "ocr">("ai");
+  const [ocrResults, setOcrResults] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [transactions, setTransactions] = useState<Transaction[]>([
     { id: 1, storeName: "스타벅스 강남점", amount: 15400, category: "카페", timestamp: new Date(2026, 3, 1, 14, 20).getTime(), type: "expense" },
@@ -101,12 +114,107 @@ export default function App() {
     setCategories(categories.map(c => c === oldName ? newName : c));
     setTransactions(transactions.map(t => t.category === oldName ? { ...t, category: newName } : t));
   };
+
+  const processImageWithAi = async (base64Image: string) => {
+    setIsAiLoading(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          {
+            parts: [
+              { text: `이 영수증, 결제 내역, 또는 은행 앱의 입출금 내역 캡처 이미지에서 정보를 추출해줘. 
+              다음 JSON 형식으로 응답해:
+              {
+                "storeName": "상점명 또는 입금자명",
+                "amount": 12345,
+                "category": "식비/카페/교통/쇼핑/생활/기기/기타 중 하나",
+                "type": "income 또는 expense"
+              }
+              카테고리는 반드시 다음 중 하나여야 함: ${categories.join(", ")}
+              금액은 콤마 없이 숫자만.
+              상점명은 가장 핵심적인 이름만. 만약 은행 입금 내역이라면 보낸 사람 이름을 상점명에 넣어줘.` },
+              { inlineData: { data: base64Image.split(",")[1], mimeType: "image/jpeg" } }
+            ]
+          }
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              storeName: { type: Type.STRING },
+              amount: { type: Type.NUMBER },
+              category: { type: Type.STRING },
+              type: { type: Type.STRING, enum: ["income", "expense"] }
+            },
+            required: ["storeName", "amount", "category", "type"]
+          }
+        }
+      });
+
+      const result = JSON.parse(response.text);
+      setNewStore(result.storeName);
+      setNewAmount(result.amount.toString());
+      setNewCategory(result.category);
+      setNewType(result.type);
+    } catch (error) {
+      console.error("AI Extraction Error:", error);
+      alert("이미지 분석 중 오류가 발생했습니다.");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const extractTextFromImage = async (base64Image: string) => {
+    setIsOcrLoading(true);
+    setOcrResults([]);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          {
+            parts: [
+              { text: "이 이미지에서 보이는 모든 텍스트를 읽어서 줄바꿈으로 구분된 목록으로 응답해줘. 다른 설명은 하지 말고 텍스트만 나열해." },
+              { inlineData: { data: base64Image.split(",")[1], mimeType: "image/jpeg" } }
+            ]
+          }
+        ]
+      });
+
+      const lines = response.text?.split("\n").filter(line => line.trim().length > 0) || [];
+      setOcrResults(lines);
+    } catch (error) {
+      console.error("OCR Error:", error);
+      alert("텍스트 추출 중 오류가 발생했습니다.");
+    } finally {
+      setIsOcrLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (fileMode === "ai") {
+        processImageWithAi(reader.result as string);
+      } else {
+        extractTextFromImage(reader.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
   
   const filteredTransactions = transactions.filter(t => {
     const d = new Date(t.timestamp);
     const matchesMonth = d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     const matchesCategory = filterCategory === "전체" || t.category === filterCategory;
-    return matchesMonth && matchesCategory;
+    const matchesSearch = t.storeName.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesMonth && matchesCategory && matchesSearch;
   });
 
   const totalIncome = filteredTransactions
@@ -328,7 +436,7 @@ export default function App() {
               {view === "list" && (
                 <>
                   {/* Summary Section */}
-                  <div className="p-5 bg-indigo-50">
+                  <div className="p-5 bg-indigo-50 space-y-3">
                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">수입</span>
@@ -349,16 +457,34 @@ export default function App() {
 
                   {/* Transaction List */}
                   <div className="px-4 py-2 space-y-3">
-                    <div className="flex items-center justify-between px-1">
-                      <select 
-                        value={filterCategory}
-                        onChange={(e) => setFilterCategory(e.target.value)}
-                        className="text-xs font-bold text-gray-500 bg-transparent border-none focus:ring-0 cursor-pointer p-0"
-                      >
-                        <option value="전체">전체 내역</option>
-                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                      <p className="text-[10px] text-gray-400 font-medium">{filteredTransactions.length}건</p>
+                    <div className="flex items-center justify-between px-1 gap-2">
+                      <div className="flex items-center gap-1">
+                        <select 
+                          value={filterCategory}
+                          onChange={(e) => setFilterCategory(e.target.value)}
+                          className="text-xs font-bold text-gray-500 bg-transparent border-none focus:ring-0 cursor-pointer p-0"
+                        >
+                          <option value="전체">전체 내역</option>
+                          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <p className="text-[10px] text-gray-400 font-medium">{filteredTransactions.length}건</p>
+                      </div>
+                      
+                      <div className="flex-1 flex items-center bg-gray-50 rounded-lg px-2 py-1 border border-gray-100">
+                        <Search size={12} className="text-gray-400 mr-1" />
+                        <input 
+                          type="text" 
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="검색"
+                          className="w-full bg-transparent border-none focus:ring-0 text-[10px] p-0 font-medium placeholder:text-gray-300"
+                        />
+                        {searchQuery && (
+                          <button onClick={() => setSearchQuery("")}>
+                            <X size={10} className="text-gray-300" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     {filteredTransactions.length > 0 ? (
                       filteredTransactions.map((t) => (
@@ -377,7 +503,11 @@ export default function App() {
                               }}
                               className="text-[10px] bg-indigo-50 text-indigo-600 font-bold px-2 py-0.5 rounded-md border-none focus:ring-1 focus:ring-indigo-300 w-fit cursor-pointer"
                             >
-                              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                              {categories.map(c => (
+                                <option key={c} value={c}>
+                                  {c.length > 4 ? c.substring(0, 4) + ".." : c}
+                                </option>
+                              ))}
                               <option value="ADD_NEW">+ 추가</option>
                             </select>
                             <span className="text-sm font-bold text-gray-800">{t.storeName}</span>
@@ -411,7 +541,9 @@ export default function App() {
                       {stats.map((s) => (
                         <div key={s.category} className="space-y-2">
                           <div className="flex justify-between items-end">
-                            <span className="text-sm font-bold text-gray-700">{s.category}</span>
+                            <span className="text-sm font-bold text-gray-700">
+                              {s.category.length > 8 ? s.category.substring(0, 8) + ".." : s.category}
+                            </span>
                             <span className="text-sm font-black text-indigo-600">{s.amount.toLocaleString()}원</span>
                           </div>
                           <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
@@ -460,7 +592,7 @@ export default function App() {
                             }}
                             className="cursor-pointer text-gray-700"
                           >
-                            {cat}
+                            {cat.length > 4 ? cat.substring(0, 4) + ".." : cat}
                           </span>
                           <button onClick={() => setCategoryToDelete(cat)} className="text-gray-400 hover:text-red-500">
                             <Plus size={12} className="rotate-45" />
@@ -614,6 +746,7 @@ export default function App() {
               </div>
             )}
 
+            {/* AI Result Modal */}
             {/* Delete Confirmation Modal */}
             {categoryToDelete && (
               <div className="absolute inset-0 bg-black/50 flex items-end z-50">
@@ -727,10 +860,94 @@ export default function App() {
               <div className="absolute inset-0 bg-black/50 flex items-end z-20">
                 <div className="w-full bg-white rounded-t-[32px] p-6 space-y-4 animate-in slide-in-from-bottom duration-300">
                   <div className="flex justify-between items-center">
-                    <h3 className="font-bold text-gray-800">내역 직접 추가</h3>
+                    <h3 className="font-bold text-gray-800">내역 추가</h3>
                     <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400">
-                      <Trash2 size={20} />
+                      <Plus size={20} className="rotate-45" />
                     </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-2">
+                    <button 
+                      onClick={() => {
+                        setFileMode("ai");
+                        setTimeout(() => fileInputRef.current?.click(), 0);
+                      }}
+                      disabled={isAiLoading || isOcrLoading}
+                      className="flex flex-col items-center justify-center gap-2 p-4 bg-indigo-50 border-2 border-indigo-100 rounded-2xl hover:bg-indigo-100 transition-all disabled:opacity-50 group"
+                    >
+                      <div className="p-2 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+                        {isAiLoading ? (
+                          <Loader2 size={20} className="animate-spin text-indigo-600" />
+                        ) : (
+                          <Camera size={20} className="text-indigo-600" />
+                        )}
+                      </div>
+                      <span className="text-[10px] font-bold text-indigo-600">스마트 인식</span>
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        setFileMode("ocr");
+                        setTimeout(() => fileInputRef.current?.click(), 0);
+                      }}
+                      disabled={isAiLoading || isOcrLoading}
+                      className="flex flex-col items-center justify-center gap-2 p-4 bg-amber-50 border-2 border-amber-100 rounded-2xl hover:bg-amber-100 transition-all disabled:opacity-50 group"
+                    >
+                      <div className="p-2 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+                        {isOcrLoading ? (
+                          <Loader2 size={20} className="animate-spin text-amber-600" />
+                        ) : (
+                          <MessageSquare size={20} className="text-amber-600" />
+                        )}
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-600">텍스트 추출</span>
+                    </button>
+
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      onChange={handleFileChange} 
+                      accept="image/*" 
+                      className="hidden" 
+                    />
+                  </div>
+
+                  {ocrResults.length > 0 && (
+                    <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-amber-700 uppercase">추출된 텍스트 (클릭하여 입력)</span>
+                        <button onClick={() => setOcrResults([])} className="text-amber-400 hover:text-amber-600">
+                          <X size={12} />
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                        {ocrResults.map((line, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              // If it looks like a number, put it in amount, else in storeName
+                              if (/^[0-9,]+$/.test(line.replace(/원/g, "").trim())) {
+                                setNewAmount(line.replace(/[^0-9]/g, ""));
+                              } else {
+                                setNewStore(line.trim());
+                              }
+                            }}
+                            className="px-2 py-1 bg-white border border-amber-200 rounded-lg text-[10px] font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+                          >
+                            {line}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                      <div className="w-full border-t border-gray-100"></div>
+                    </div>
+                    <div className="relative flex justify-center text-[10px] font-bold uppercase tracking-widest">
+                      <span className="bg-white px-2 text-gray-300">또는</span>
+                    </div>
                   </div>
                   
                   <div className="space-y-3">
@@ -779,7 +996,7 @@ export default function App() {
                               newCategory === cat ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-500"
                             }`}
                           >
-                            {cat}
+                            {cat.length > 4 ? cat.substring(0, 4) + ".." : cat}
                           </button>
                         ))}
                         <button
