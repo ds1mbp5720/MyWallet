@@ -326,12 +326,12 @@ export default function App() {
       {/* Left Side: Project Info */}
       <div className="max-w-xl space-y-8">
         <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider">
             <Code2 size={14} /> Clean Architecture + MVI
           </div>
           <h1 className="text-5xl font-extrabold tracking-tight text-gray-900 leading-tight">
             고도화된 <br/>
-            <span className="text-indigo-600">SMS 가계부</span>
+            <span className="text-blue-600">SMS 가계부</span>
           </h1>
           <p className="text-lg text-gray-600 leading-relaxed">
             항목별 카테고리 실시간 변경과 월간 통계 기능을 추가했습니다. 
@@ -341,22 +341,22 @@ export default function App() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FeatureCard 
-            icon={<BarChart3 className="text-indigo-600" />} 
+            icon={<BarChart3 className="text-blue-600" />} 
             title="Monthly Statistics" 
             desc="카테고리별 지출 비중을 시각적으로 확인"
           />
           <FeatureCard 
-            icon={<ChevronDown className="text-indigo-600" />} 
+            icon={<ChevronDown className="text-blue-600" />} 
             title="Inline Category" 
             desc="리스트에서 즉시 카테고리 수정 가능"
           />
           <FeatureCard 
-            icon={<Code2 className="text-indigo-600" />} 
+            icon={<Code2 className="text-blue-600" />} 
             title="Multi-Module" 
             desc="Domain, Data, Feature 모듈 분리 설계"
           />
           <FeatureCard 
-            icon={<Wallet className="text-indigo-600" />} 
+            icon={<Wallet className="text-blue-600" />} 
             title="Room Persistence" 
             desc="모든 내역은 내부 DB에 안전하게 저장"
           />
@@ -379,25 +379,25 @@ export default function App() {
           {/* App Content */}
           <div className="w-full h-full bg-white rounded-[38px] overflow-hidden flex flex-col relative">
             {/* Top Bar */}
-            <div className="bg-indigo-600 text-white p-6 pt-10 pb-4 shadow-md">
-              <div className="flex justify-between items-center mb-4">
+            <div className="bg-white text-gray-800 p-6 pt-10 pb-4 border-b border-blue-50">
+              <div className="relative flex justify-between items-center mb-4">
                 <h2 className="text-lg font-bold">SMS 가계부</h2>
                 <div className="flex items-center gap-1">
                   <button 
                     onClick={() => setView("list")}
-                    className={`p-2 rounded-full transition-colors ${view === "list" ? "bg-white/20" : "hover:bg-white/10"}`}
+                    className={`p-2 rounded-full transition-colors ${view === "list" ? "bg-blue-50 text-blue-600" : "hover:bg-gray-50 text-gray-400"}`}
                   >
                     <ListIcon size={18} />
                   </button>
                   <button 
                     onClick={() => setView("stats")}
-                    className={`p-2 rounded-full transition-colors ${view === "stats" ? "bg-white/20" : "hover:bg-white/10"}`}
+                    className={`p-2 rounded-full transition-colors ${view === "stats" ? "bg-blue-50 text-blue-600" : "hover:bg-gray-50 text-gray-400"}`}
                   >
                     <BarChart3 size={18} />
                   </button>
                   <button 
                     onClick={() => setView("settings")}
-                    className={`p-2 rounded-full transition-colors ${view === "settings" ? "bg-white/20" : "hover:bg-white/10"}`}
+                    className={`p-2 rounded-full transition-colors ${view === "settings" ? "bg-blue-50 text-blue-600" : "hover:bg-gray-50 text-gray-400"}`}
                   >
                     <Smartphone size={18} />
                   </button>
@@ -406,17 +406,17 @@ export default function App() {
 
               {/* Month Selector */}
               {view !== "settings" && (
-                <div className="flex items-center justify-center gap-4 bg-white/10 py-2 rounded-xl">
+                <div className="flex items-center justify-center gap-4 bg-gray-50 py-2 rounded-xl border border-blue-50">
                   <button 
                     onClick={() => {
                       if (selectedMonth === 0) { setSelectedMonth(11); setSelectedYear(selectedYear - 1); }
                       else setSelectedMonth(selectedMonth - 1);
                     }}
-                    className="hover:bg-white/10 p-1 rounded"
+                    className="hover:bg-blue-50 p-1 rounded transition-colors text-blue-600"
                   >
                     <ChevronDown size={16} className="rotate-90" />
                   </button>
-                  <span className="text-sm font-bold">
+                  <span className="text-sm font-bold text-gray-700">
                     {selectedYear}년 {selectedMonth + 1}월
                   </span>
                   <button 
@@ -424,7 +424,7 @@ export default function App() {
                       if (selectedMonth === 11) { setSelectedMonth(0); setSelectedYear(selectedYear + 1); }
                       else setSelectedMonth(selectedMonth + 1);
                     }}
-                    className="hover:bg-white/10 p-1 rounded"
+                    className="hover:bg-blue-50 p-1 rounded transition-colors text-blue-600"
                   >
                     <ChevronDown size={16} className="-rotate-90" />
                   </button>
@@ -436,8 +436,8 @@ export default function App() {
               {view === "list" && (
                 <>
                   {/* Summary Section */}
-                  <div className="p-5 bg-indigo-50 space-y-3">
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 space-y-3">
+                  <div className="p-5 bg-blue-50/30 space-y-3">
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-blue-100 space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">수입</span>
                         <span className="text-sm font-black text-blue-600">+{totalIncome.toLocaleString()}원</span>
@@ -448,7 +448,7 @@ export default function App() {
                       </div>
                       <div className="pt-2 border-t border-gray-50 flex justify-between items-center">
                         <span className="text-xs font-bold text-gray-800">합계</span>
-                        <span className={`text-lg font-black ${totalIncome - totalExpense >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>
+                        <span className={`text-lg font-black ${totalIncome - totalExpense >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                           {(totalIncome - totalExpense).toLocaleString()}원
                         </span>
                       </div>
@@ -501,7 +501,7 @@ export default function App() {
                                   updateCategory(t.id, e.target.value);
                                 }
                               }}
-                              className="text-[10px] bg-indigo-50 text-indigo-600 font-bold px-2 py-0.5 rounded-md border-none focus:ring-1 focus:ring-indigo-300 w-fit cursor-pointer"
+                              className="text-[10px] bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded-md border-none focus:ring-1 focus:ring-blue-300 w-fit cursor-pointer"
                             >
                               {categories.map(c => (
                                 <option key={c} value={c}>
@@ -544,13 +544,13 @@ export default function App() {
                             <span className="text-sm font-bold text-gray-700">
                               {s.category.length > 8 ? s.category.substring(0, 8) + ".." : s.category}
                             </span>
-                            <span className="text-sm font-black text-indigo-600">{s.amount.toLocaleString()}원</span>
+                            <span className="text-sm font-black text-blue-600">{s.amount.toLocaleString()}원</span>
                           </div>
                           <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                             <div 
-                              className="h-full bg-indigo-500 rounded-full transition-all duration-1000"
-                              style={{ width: `${(s.amount / totalAmount) * 100}%` }}
-                            ></div>
+                              className="h-full bg-blue-600 rounded-full transition-all duration-1000"
+                              style={{ width: `${(s.amount / totalExpense) * 100}%` }}
+                            />
                           </div>
                         </div>
                       ))}
@@ -583,14 +583,14 @@ export default function App() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {categories.map(cat => (
-                        <div key={cat} className="flex items-center gap-1 bg-gray-50 px-3 py-1.5 rounded-full text-[10px] font-bold border border-gray-100">
+                        <div key={cat} className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-full text-[10px] font-bold border border-blue-50 shadow-sm">
                           <span 
                             onClick={() => {
                               setEditingCategory(cat);
                               setNewCategoryName(cat);
                               setIsCategoryModalOpen(true);
                             }}
-                            className="cursor-pointer text-gray-700"
+                            className="cursor-pointer text-gray-700 hover:text-blue-600"
                           >
                             {cat.length > 4 ? cat.substring(0, 4) + ".." : cat}
                           </span>
@@ -615,7 +615,7 @@ export default function App() {
                         setNewRuleStore("원\\s+(.+)");
                         setIsRuleModalOpen(true);
                       }}
-                      className="p-1 text-indigo-600 hover:bg-indigo-50 rounded-full"
+                      className="p-1 text-blue-600 hover:bg-blue-50 rounded-full"
                     >
                       <Plus size={20} />
                     </button>
@@ -623,7 +623,7 @@ export default function App() {
 
                   <div className="space-y-3">
                     {parsingRules.map(rule => (
-                      <div key={rule.id} className={`p-4 rounded-2xl border ${rule.isActive ? "bg-white border-indigo-100" : "bg-gray-50 border-gray-100"}`}>
+                      <div key={rule.id} className={`p-4 rounded-2xl border ${rule.isActive ? "bg-white border-blue-100" : "bg-gray-50 border-gray-100"}`}>
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <p className="text-sm font-bold text-gray-800">{rule.name}</p>
@@ -638,7 +638,7 @@ export default function App() {
                             type="checkbox" 
                             checked={rule.isActive} 
                             onChange={() => setParsingRules(parsingRules.map(r => r.id === rule.id ? { ...r, isActive: !r.isActive } : r))}
-                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
                         </div>
                         <div className="flex justify-end gap-2 mt-2">
@@ -652,7 +652,7 @@ export default function App() {
                               setNewRuleType(rule.type);
                               setIsRuleModalOpen(true);
                             }}
-                            className="text-[10px] font-bold text-indigo-600"
+                            className="text-[10px] font-bold text-blue-600"
                           >
                             수정
                           </button>
@@ -685,7 +685,7 @@ export default function App() {
                       ></textarea>
                       <button 
                         onClick={() => parseSms(testSms, testSender)}
-                        className="w-full bg-indigo-600 text-white py-3 rounded-xl text-xs font-bold"
+                        className="w-full bg-blue-600 text-white py-3 rounded-xl text-xs font-bold"
                       >
                         테스트 실행
                       </button>
@@ -699,7 +699,7 @@ export default function App() {
             {view === "list" && (
               <button 
                 onClick={() => setIsAddModalOpen(true)}
-                className="absolute bottom-6 right-6 w-12 h-12 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 flex items-center justify-center text-white hover:scale-110 transition-transform z-10"
+                className="absolute bottom-6 right-6 w-12 h-12 bg-blue-600 rounded-2xl shadow-lg shadow-blue-200 flex items-center justify-center text-white hover:scale-110 transition-transform z-10"
               >
                 <Plus size={24} />
               </button>
@@ -724,7 +724,7 @@ export default function App() {
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         placeholder="예: 식비, 카페, 쇼핑..."
-                        className="w-full border-b-2 border-gray-100 py-2 focus:border-indigo-500 outline-none text-sm"
+                        className="w-full border-b-2 border-gray-100 py-2 focus:border-blue-500 outline-none text-sm"
                       />
                     </div>
                   </div>
@@ -738,7 +738,7 @@ export default function App() {
                       }
                       setIsCategoryModalOpen(false);
                     }}
-                    className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-colors"
+                    className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-colors"
                   >
                     {editingCategory ? "저장하기" : "추가하기"}
                   </button>
@@ -812,7 +812,7 @@ export default function App() {
                         value={newRuleName}
                         onChange={(e) => setNewRuleName(e.target.value)}
                         placeholder="예: 신한은행"
-                        className="w-full border-b-2 border-gray-100 py-2 focus:border-indigo-500 outline-none text-sm"
+                        className="w-full border-b-2 border-gray-100 py-2 focus:border-blue-500 outline-none text-sm"
                       />
                     </div>
                     <div>
@@ -822,7 +822,7 @@ export default function App() {
                         value={newRuleSender}
                         onChange={(e) => setNewRuleSender(e.target.value)}
                         placeholder="예: 1588-8100"
-                        className="w-full border-b-2 border-gray-100 py-2 focus:border-indigo-500 outline-none text-sm"
+                        className="w-full border-b-2 border-gray-100 py-2 focus:border-blue-500 outline-none text-sm"
                       />
                     </div>
                     <div>
@@ -831,7 +831,7 @@ export default function App() {
                         type="text" 
                         value={newRuleAmount}
                         onChange={(e) => setNewRuleAmount(e.target.value)}
-                        className="w-full border-b-2 border-gray-100 py-2 focus:border-indigo-500 outline-none text-sm"
+                        className="w-full border-b-2 border-gray-100 py-2 focus:border-blue-500 outline-none text-sm"
                       />
                     </div>
                     <div>
@@ -840,14 +840,14 @@ export default function App() {
                         type="text" 
                         value={newRuleStore}
                         onChange={(e) => setNewRuleStore(e.target.value)}
-                        className="w-full border-b-2 border-gray-100 py-2 focus:border-indigo-500 outline-none text-sm"
+                        className="w-full border-b-2 border-gray-100 py-2 focus:border-blue-500 outline-none text-sm"
                       />
                     </div>
                   </div>
 
                   <button 
                     onClick={handleAddRule}
-                    className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-colors"
+                    className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-colors"
                   >
                     {editingRule ? "저장하기" : "추가하기"}
                   </button>
@@ -873,16 +873,16 @@ export default function App() {
                         setTimeout(() => fileInputRef.current?.click(), 0);
                       }}
                       disabled={isAiLoading || isOcrLoading}
-                      className="flex flex-col items-center justify-center gap-2 p-4 bg-indigo-50 border-2 border-indigo-100 rounded-2xl hover:bg-indigo-100 transition-all disabled:opacity-50 group"
+                      className="flex flex-col items-center justify-center gap-2 p-4 bg-blue-50 border-2 border-blue-100 rounded-2xl hover:bg-blue-100 transition-all disabled:opacity-50 group"
                     >
                       <div className="p-2 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform">
                         {isAiLoading ? (
-                          <Loader2 size={20} className="animate-spin text-indigo-600" />
+                          <Loader2 size={20} className="animate-spin text-blue-600" />
                         ) : (
-                          <Camera size={20} className="text-indigo-600" />
+                          <Camera size={20} className="text-blue-600" />
                         )}
                       </div>
-                      <span className="text-[10px] font-bold text-indigo-600">스마트 인식</span>
+                      <span className="text-[10px] font-bold text-blue-600">스마트 인식</span>
                     </button>
 
                     <button 
@@ -972,7 +972,7 @@ export default function App() {
                         value={newStore}
                         onChange={(e) => setNewStore(e.target.value)}
                         placeholder="예: 스타벅스"
-                        className="w-full border-b-2 border-gray-100 py-2 focus:border-indigo-500 outline-none text-sm"
+                        className="w-full border-b-2 border-gray-100 py-2 focus:border-blue-500 outline-none text-sm"
                       />
                     </div>
                     <div>
@@ -982,7 +982,7 @@ export default function App() {
                         value={newAmount}
                         onChange={(e) => setNewAmount(e.target.value)}
                         placeholder="0"
-                        className="w-full border-b-2 border-gray-100 py-2 focus:border-indigo-500 outline-none text-sm font-bold"
+                        className="w-full border-b-2 border-gray-100 py-2 focus:border-blue-500 outline-none text-sm font-bold"
                       />
                     </div>
                     <div>
@@ -993,7 +993,7 @@ export default function App() {
                             key={cat}
                             onClick={() => setNewCategory(cat)}
                             className={`px-3 py-1 rounded-full text-[10px] font-bold transition-colors ${
-                              newCategory === cat ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-500"
+                              newCategory === cat ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-500"
                             }`}
                           >
                             {cat.length > 4 ? cat.substring(0, 4) + ".." : cat}
@@ -1005,7 +1005,7 @@ export default function App() {
                             setNewCategoryName("");
                             setIsCategoryModalOpen(true);
                           }}
-                          className="px-3 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100"
+                          className="px-3 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100"
                         >
                           + 추가
                         </button>
@@ -1015,7 +1015,7 @@ export default function App() {
 
                   <button 
                     onClick={handleAddTransaction}
-                    className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-colors"
+                    className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-colors"
                   >
                     추가하기
                   </button>
@@ -1031,10 +1031,12 @@ export default function App() {
 
 function FeatureCard({ icon, title, desc }: { icon: ReactNode, title: string, desc: string }) {
   return (
-    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-      <div className="mb-3">{icon}</div>
-      <h3 className="font-bold text-sm mb-1">{title}</h3>
-      <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
+    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+      <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-3">
+        {icon}
+      </div>
+      <h3 className="font-bold text-gray-800 text-sm mb-1">{title}</h3>
+      <p className="text-xs text-gray-500 leading-tight">{desc}</p>
     </div>
   );
 }

@@ -31,60 +31,87 @@ fun LedgerScreen(viewModel: LedgerViewModel) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("SMS 가계부", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        // Month Selector in Title area or below
-                        if (currentTab != 2) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.clickable { /* Could open a month picker */ }
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        if (state.selectedMonth == 0) viewModel.handleIntent(LedgerIntent.ChangeMonth(11, state.selectedYear - 1))
-                                        else viewModel.handleIntent(LedgerIntent.ChangeMonth(state.selectedMonth - 1, state.selectedYear))
-                                    },
-                                    modifier = Modifier.size(24.dp)
+            Surface(
+                shadowElevation = 0.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEFF6FF)) // blue-50
+            ) {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.White,
+                        titleContentColor = Color(0xFF1A1A1A),
+                    ),
+                    title = {
+                        Column {
+                            Text("SMS 가계부", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
+                            // Month Selector in Title area or below
+                            if (currentTab != 2) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.clickable { /* Could open a month picker */ }
                                 ) {
-                                    Icon(Icons.Default.ChevronLeft, contentDescription = null)
-                                }
-                                Text(
-                                    "${state.selectedYear}.${String.format("%02d", state.selectedMonth + 1)}",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 4.dp)
-                                )
-                                IconButton(
-                                    onClick = {
-                                        if (state.selectedMonth == 11) viewModel.handleIntent(LedgerIntent.ChangeMonth(0, state.selectedYear + 1))
-                                        else viewModel.handleIntent(LedgerIntent.ChangeMonth(state.selectedMonth + 1, state.selectedYear))
-                                    },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(Icons.Default.ChevronRight, contentDescription = null)
+                                    IconButton(
+                                        onClick = {
+                                            if (state.selectedMonth == 0) viewModel.handleIntent(LedgerIntent.ChangeMonth(11, state.selectedYear - 1))
+                                            else viewModel.handleIntent(LedgerIntent.ChangeMonth(state.selectedMonth - 1, state.selectedYear))
+                                        },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = Color(0xFF2563EB))
+                                    }
+                                    Text(
+                                        "${state.selectedYear}.${String.format("%02d", state.selectedMonth + 1)}",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1A1A1A),
+                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            if (state.selectedMonth == 11) viewModel.handleIntent(LedgerIntent.ChangeMonth(0, state.selectedYear + 1))
+                                            else viewModel.handleIntent(LedgerIntent.ChangeMonth(state.selectedMonth + 1, state.selectedYear))
+                                        },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF2563EB))
+                                    }
                                 }
                             }
                         }
+                    },
+                    actions = {
+                        IconButton(onClick = { currentTab = 0 }) {
+                            Icon(
+                                Icons.Default.List, 
+                                contentDescription = "목록", 
+                                tint = if(currentTab == 0) Color(0xFF2563EB) else Color(0xFF94A3B8)
+                            )
+                        }
+                        IconButton(onClick = { currentTab = 1 }) {
+                            Icon(
+                                Icons.Default.BarChart, 
+                                contentDescription = "통계", 
+                                tint = if(currentTab == 1) Color(0xFF2563EB) else Color(0xFF94A3B8)
+                            )
+                        }
+                        IconButton(onClick = { currentTab = 2 }) {
+                            Icon(
+                                Icons.Default.Settings, 
+                                contentDescription = "설정", 
+                                tint = if(currentTab == 2) Color(0xFF2563EB) else Color(0xFF94A3B8)
+                            )
+                        }
                     }
-                },
-                actions = {
-                    IconButton(onClick = { currentTab = 0 }) {
-                        Icon(Icons.Default.List, contentDescription = "목록", tint = if(currentTab == 0) MaterialTheme.colorScheme.primary else LocalContentColor.current)
-                    }
-                    IconButton(onClick = { currentTab = 1 }) {
-                        Icon(Icons.Default.BarChart, contentDescription = "통계", tint = if(currentTab == 1) MaterialTheme.colorScheme.primary else LocalContentColor.current)
-                    }
-                    IconButton(onClick = { currentTab = 2 }) {
-                        Icon(Icons.Default.Settings, contentDescription = "설정", tint = if(currentTab == 2) MaterialTheme.colorScheme.primary else LocalContentColor.current)
-                    }
-                }
-            )
+                )
+            }
         },
         floatingActionButton = {
             if (currentTab == 0) {
-                FloatingActionButton(onClick = { showAddDialog = true }) {
+                FloatingActionButton(
+                    onClick = { showAddDialog = true },
+                    containerColor = Color(0xFF2563EB),
+                    contentColor = Color.White,
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp)
+                ) {
                     Icon(Icons.Default.Add, contentDescription = "추가")
                 }
             }
@@ -137,25 +164,26 @@ fun TransactionListView(state: LedgerState, viewModel: LedgerViewModel) {
         // Summary Card
         Card(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)), // blue-50
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDBEAFE)) // blue-100
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("수입", style = MaterialTheme.typography.labelMedium)
-                    Text(numberFormat.format(state.totalIncome), color = Color(0xFF2196F3), fontWeight = FontWeight.Bold)
+                    Text("수입", style = MaterialTheme.typography.labelMedium, color = Color(0xFF64748B))
+                    Text(numberFormat.format(state.totalIncome), color = Color(0xFF2563EB), fontWeight = FontWeight.Bold)
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("지출", style = MaterialTheme.typography.labelMedium)
-                    Text(numberFormat.format(state.totalExpense), color = Color(0xFFF44336), fontWeight = FontWeight.Bold)
+                    Text("지출", style = MaterialTheme.typography.labelMedium, color = Color(0xFF64748B))
+                    Text(numberFormat.format(state.totalExpense), color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
                 }
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color(0xFFDBEAFE))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("합계", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("합계", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1A1A1A))
                     Text(
                         text = numberFormat.format(state.totalAmount),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Black,
-                        color = if (state.totalAmount >= 0) MaterialTheme.colorScheme.primary else Color(0xFFF44336)
+                        color = if (state.totalAmount >= 0) Color(0xFF2563EB) else Color(0xFFEF4444)
                     )
                 }
             }
@@ -197,15 +225,15 @@ fun StatisticsView(state: LedgerState) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         val truncatedCategory = if (category.length > 8) category.substring(0, 8) + ".." else category
-                        Text(truncatedCategory, fontWeight = FontWeight.SemiBold)
-                        Text(numberFormat.format(amount), fontWeight = FontWeight.Bold)
+                        Text(truncatedCategory, fontWeight = FontWeight.SemiBold, color = Color(0xFF1A1A1A))
+                        Text(numberFormat.format(amount), fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
                     }
                     val progress = amount.toFloat() / state.totalAmount.coerceAtLeast(1).toFloat()
                     LinearProgressIndicator(
                         progress = progress,
                         modifier = Modifier.fillMaxWidth().height(8.dp).padding(top = 4.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        color = Color(0xFF2563EB),
+                        trackColor = Color(0xFFEFF6FF)
                     )
                 }
             }
@@ -236,7 +264,7 @@ fun SettingsView(state: LedgerState, viewModel: LedgerViewModel) {
                     editingCategory = null
                     showAddCategoryDialog = true 
                 }) {
-                    Icon(Icons.Default.AddCircle, contentDescription = "카테고리 추가", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.AddCircle, contentDescription = "카테고리 추가", tint = Color(0xFF2563EB))
                 }
             }
         }
@@ -256,15 +284,22 @@ fun SettingsView(state: LedgerState, viewModel: LedgerViewModel) {
                         },
                         label = { 
                             val truncatedName = if (category.name.length > 4) category.name.substring(0, 4) + ".." else category.name
-                            Text(truncatedName) 
+                            Text(truncatedName, color = Color(0xFF1A1A1A)) 
                         },
+                        colors = InputChipDefaults.inputChipColors(
+                            containerColor = Color.White,
+                        ),
+                        border = InputChipDefaults.inputChipBorder(
+                            borderColor = Color(0xFFEFF6FF)
+                        ),
                         trailingIcon = {
                             Icon(
                                 Icons.Default.Close,
                                 contentDescription = "삭제",
                                 modifier = Modifier.size(16.dp).clickable {
                                     categoryToDelete = category
-                                }
+                                },
+                                tint = Color(0xFF94A3B8)
                             )
                         }
                     )
@@ -286,19 +321,22 @@ fun SettingsView(state: LedgerState, viewModel: LedgerViewModel) {
                     editingRule = null
                     showAddRuleDialog = true 
                 }) {
-                    Icon(Icons.Default.AddCircle, contentDescription = "규칙 추가", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.AddCircle, contentDescription = "규칙 추가", tint = Color(0xFF2563EB))
                 }
             }
         }
 
         if (state.parsingRules.isEmpty()) {
             item {
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC))
+                ) {
                     Text(
                         "등록된 파싱 규칙이 없습니다.\n우측 상단의 + 버튼을 눌러 추가하세요.",
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
+                        color = Color(0xFF94A3B8)
                     )
                 }
             }
@@ -346,7 +384,8 @@ fun SettingsView(state: LedgerState, viewModel: LedgerViewModel) {
             Button(
                 onClick = { viewModel.handleIntent(LedgerIntent.ParseSms(testSms, testSender.ifBlank { null })) },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                shape = MaterialTheme.shapes.medium
             ) {
                 Text("테스트 실행 (DB 저장됨)")
             }
@@ -416,8 +455,9 @@ fun ParsingRuleItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (rule.isActive) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = if (rule.isActive) Color.White else Color(0xFFF8FAFC)
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (rule.isActive) Color(0xFFEFF6FF) else Color(0xFFE2E8F0))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -427,37 +467,41 @@ fun ParsingRuleItem(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(rule.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(rule.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1A1A1A))
                         Spacer(modifier = Modifier.width(8.dp))
                         Surface(
-                            color = if (rule.type == TransactionType.INCOME) Color(0xFFE3F2FD) else Color(0xFFFFEBEE),
+                            color = if (rule.type == TransactionType.INCOME) Color(0xFFEFF6FF) else Color(0xFFFEF2F2),
                             shape = MaterialTheme.shapes.extraSmall
                         ) {
                             Text(
                                 text = if (rule.type == TransactionType.INCOME) "수입" else "지출",
                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (rule.type == TransactionType.INCOME) Color(0xFF2196F3) else Color(0xFFF44336)
+                                color = if (rule.type == TransactionType.INCOME) Color(0xFF2563EB) else Color(0xFFEF4444)
                             )
                         }
                     }
                     if (!rule.senderNumber.isNullOrBlank()) {
-                        Text("발신번호: ${rule.senderNumber}", style = MaterialTheme.typography.bodySmall)
+                        Text("발신번호: ${rule.senderNumber}", style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B))
                     }
                 }
-                Switch(checked = rule.isActive, onCheckedChange = { onToggle() })
+                Switch(
+                    checked = rule.isActive, 
+                    onCheckedChange = { onToggle() },
+                    colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF2563EB))
+                )
             }
             
             Spacer(modifier = Modifier.height(8.dp))
-            Text("금액 패턴: ${rule.amountPattern}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-            Text("상점 패턴: ${rule.storePattern}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text("금액 패턴: ${rule.amountPattern}", style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
+            Text("상점 패턴: ${rule.storePattern}", style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = onEdit) { Text("수정") }
-                TextButton(onClick = onDelete, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("삭제") }
+                TextButton(onClick = onEdit, colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF2563EB))) { Text("수정") }
+                TextButton(onClick = onDelete, colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFEF4444))) { Text("삭제") }
             }
         }
     }
@@ -533,11 +577,11 @@ fun TransactionItem(
         headlineContent = { Text(transaction.storeName, fontWeight = FontWeight.Bold) },
         supportingContent = { 
             Column {
-                Text(dateFormat.format(Date(transaction.date)))
+                Text(dateFormat.format(Date(transaction.date)), color = Color(0xFF64748B))
                 Box {
                     Surface(
                         onClick = { expanded = true },
-                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        color = Color(0xFFEFF6FF), // blue-50
                         shape = MaterialTheme.shapes.small,
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
@@ -546,7 +590,7 @@ fun TransactionItem(
                             truncatedCategory, 
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                            color = Color(0xFF2563EB)
                         )
                     }
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -581,10 +625,10 @@ fun TransactionItem(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${transaction.amount}원",
-                    color = if (transaction.type == TransactionType.INCOME) Color(0xFF2196F3) else Color(0xFFF44336),
+                    color = if (transaction.type == TransactionType.INCOME) Color(0xFF2563EB) else Color(0xFFEF4444),
                     fontWeight = FontWeight.Bold
                 )
-                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = null) }
+                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFF94A3B8)) }
             }
         }
     )
@@ -627,20 +671,24 @@ fun AddTransactionDialog(
                     Button(
                         onClick = { /* AI Smart Recognition logic */ },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEFF6FF), contentColor = Color(0xFF2563EB)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDBEAFE)),
+                        shape = MaterialTheme.shapes.medium
                     ) {
                         Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("스마트 인식", fontSize = 12.sp)
+                        Text("스마트 인식", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                     Button(
                         onClick = { /* OCR logic */ },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFF8E1), contentColor = Color(0xFF795548))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFFBEB), contentColor = Color(0xFFD97706)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFEF3C7)),
+                        shape = MaterialTheme.shapes.medium
                     ) {
                         Icon(Icons.Default.TextFields, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("텍스트 추출", fontSize = 12.sp)
+                        Text("텍스트 추출", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -710,8 +758,12 @@ fun AddTransactionDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(amount.toLongOrNull() ?: 0L, store, category, type) }) {
-                Text("추가")
+            Button(
+                onClick = { onConfirm(amount.toLongOrNull() ?: 0L, store, category, type) },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text("추가", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
