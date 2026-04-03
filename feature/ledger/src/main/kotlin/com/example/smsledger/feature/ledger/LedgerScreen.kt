@@ -209,19 +209,27 @@ fun TransactionListView(state: LedgerState, viewModel: LedgerViewModel) {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Category Filter Dropdown
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable { /* Show filter menu */ }
-            ) {
-                Text("전체 내역", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B))
-                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "${state.transactions.size}건",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF94A3B8)
-                )
+            var filterExpanded by remember { mutableStateOf(false) }
+            Box {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { filterExpanded = true }
+                ) {
+                    Text("전체 내역", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B))
+                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "${state.transactions.size}건",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF94A3B8)
+                    )
+                }
+                DropdownMenu(expanded = filterExpanded, onDismissRequest = { filterExpanded = false }) {
+                    DropdownMenuItem(text = { Text("전체") }, onClick = { filterExpanded = false })
+                    DropdownMenuItem(text = { Text("지출") }, onClick = { filterExpanded = false })
+                    DropdownMenuItem(text = { Text("수입") }, onClick = { filterExpanded = false })
+                }
             }
 
             // Search Bar (Slim & Modern - Integrated)
@@ -908,7 +916,7 @@ fun AddTransactionDialog(
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
-                    // Top AI Buttons
+                    // Top AI Buttons (Web Preview Style)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -918,9 +926,9 @@ fun AddTransactionDialog(
                                 isOcrMode = false
                                 handleCameraAction() 
                             },
-                            modifier = Modifier.weight(1f).height(56.dp),
+                            modifier = Modifier.weight(1f).height(48.dp),
                             shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFF0F7FF),
+                            color = Color(0xFFEFF6FF),
                             border = BorderStroke(1.dp, Color(0xFFDBEAFE))
                         ) {
                             Row(
@@ -932,14 +940,14 @@ fun AddTransactionDialog(
                                     imageVector = if (isAiLoading) Icons.Default.Refresh else Icons.Default.AutoAwesome,
                                     contentDescription = null,
                                     tint = Color(0xFF2563EB),
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     if (isAiLoading) "인식 중..." else "스마트 인식",
                                     color = Color(0xFF2563EB),
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
+                                    fontSize = 13.sp
                                 )
                             }
                         }
@@ -948,7 +956,7 @@ fun AddTransactionDialog(
                                 isOcrMode = true
                                 galleryLauncher.launch("image/*") 
                             },
-                            modifier = Modifier.weight(1f).height(56.dp),
+                            modifier = Modifier.weight(1f).height(48.dp),
                             shape = RoundedCornerShape(12.dp),
                             color = Color(0xFFFFFBEB),
                             border = BorderStroke(1.dp, Color(0xFFFEF3C7))
@@ -962,14 +970,14 @@ fun AddTransactionDialog(
                                     Icons.Default.TextFields, 
                                     contentDescription = null, 
                                     tint = Color(0xFFD97706), 
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     "텍스트 추출", 
                                     color = Color(0xFFD97706), 
                                     fontWeight = FontWeight.Bold, 
-                                    fontSize = 14.sp
+                                    fontSize = 13.sp
                                 )
                             }
                         }
@@ -977,37 +985,38 @@ fun AddTransactionDialog(
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
-                    // Transaction Type Toggle
+                    // Transaction Type Toggle (Web Preview Style)
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.fillMaxWidth().height(44.dp).background(Color(0xFFF1F5F9), RoundedCornerShape(12.dp)).padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Surface(
                             onClick = { type = TransactionType.EXPENSE },
                             modifier = Modifier.weight(1f).fillMaxHeight(),
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (type == TransactionType.EXPENSE) Color.White else Color(0xFFF1F5F9),
-                            border = if (type == TransactionType.EXPENSE) BorderStroke(1.dp, Color(0xFFCBD5E1)) else null
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (type == TransactionType.EXPENSE) Color(0xFF2563EB) else Color.Transparent
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     "지출", 
-                                    color = if (type == TransactionType.EXPENSE) Color(0xFF1E293B) else Color(0xFF94A3B8), 
-                                    fontWeight = FontWeight.Bold
+                                    color = if (type == TransactionType.EXPENSE) Color.White else Color(0xFF64748B), 
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
                                 )
                             }
                         }
                         Surface(
                             onClick = { type = TransactionType.INCOME },
                             modifier = Modifier.weight(1f).fillMaxHeight(),
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (type == TransactionType.INCOME) Color(0xFF2563EB) else Color(0xFFF1F5F9)
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (type == TransactionType.INCOME) Color(0xFF2563EB) else Color.Transparent
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     "수입", 
-                                    color = if (type == TransactionType.INCOME) Color.White else Color(0xFF94A3B8), 
-                                    fontWeight = FontWeight.Bold
+                                    color = if (type == TransactionType.INCOME) Color.White else Color(0xFF64748B), 
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
                                 )
                             }
                         }
