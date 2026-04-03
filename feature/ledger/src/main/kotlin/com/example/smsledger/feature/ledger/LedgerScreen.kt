@@ -189,17 +189,17 @@ fun TransactionListView(state: LedgerState, viewModel: LedgerViewModel) {
                 Column(modifier = Modifier.padding(20.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("수입", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 1.sp)
-                        Text("+₩${String.format("%,d", state.totalIncome)}", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFF2563EB))
+                        Text("+${state.totalIncome.toKoreanCurrency()}", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFF2563EB))
                     }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("지출", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 1.sp)
-                        Text("-₩${String.format("%,d", state.totalExpense)}", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFFEF4444))
+                        Text("-${state.totalExpense.toKoreanCurrency()}", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFFEF4444))
                     }
                     HorizontalDivider(color = Color(0xFFF8FAFC), thickness = 1.dp)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("합계", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
                         Text(
-                            text = "₩${String.format("%,d", state.totalAmount)}",
+                            text = state.totalAmount.toKoreanCurrency(),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Black,
                             color = if (state.totalAmount >= 0) Color(0xFF2563EB) else Color(0xFFEF4444)
@@ -732,8 +732,7 @@ fun TransactionItem(
     onDelete: () -> Unit,
     onAddCategory: (String) -> Unit
 ) {
-    val dateFormat = remember { SimpleDateFormat("MM월 dd일 HH:mm", Locale.KOREA) }
-    var expanded by remember { mutableStateOf(false) }
+    val expanded by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
 
     Row(
@@ -797,7 +796,7 @@ fun TransactionItem(
             
             // Date
             Text(
-                dateFormat.format(Date(transaction.date)),
+                transaction.date.toFormattedDate(),
                 style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Medium),
                 color = Color(0xFF94A3B8)
             )
@@ -806,7 +805,7 @@ fun TransactionItem(
         // Right Side: Amount & Delete (Web Design 1:1 Match)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${String.format("%,d", transaction.amount)}",
+                text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${transaction.amount.toKoreanCurrency()}",
                 style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Black),
                 color = if (transaction.type == TransactionType.INCOME) Color(0xFF2563EB) else Color(0xFFEF4444)
             )
@@ -1210,4 +1209,14 @@ fun AddCategoryDialog(
             TextButton(onClick = onDismiss) { Text("취소") }
         }
     )
+}
+
+// Helper Extension Functions (Web Design 1:1 Match)
+fun Long.toKoreanCurrency(): String {
+    return "₩${String.format("%,d", Math.abs(this))}"
+}
+
+fun Long.toFormattedDate(): String {
+    val sdf = SimpleDateFormat("MM월 dd일 HH:mm", Locale.KOREA)
+    return sdf.format(Date(this))
 }
