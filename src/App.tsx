@@ -84,7 +84,54 @@ export default function App() {
   const [isOcrLoading, setIsOcrLoading] = useState(false);
   const [fileMode, setFileMode] = useState<"ai" | "ocr">("ai");
   const [ocrResults, setOcrResults] = useState<string[]>([]);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const startCamera = async () => {
+    setIsCameraOpen(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" } 
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("Camera Error:", err);
+      alert("카메라를 열 수 없습니다. 권한을 확인해주세요.");
+      setIsCameraOpen(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
+    setIsCameraOpen(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const base64Image = canvas.toDataURL("image/jpeg");
+        if (fileMode === "ai") {
+          processImageWithAi(base64Image);
+        } else {
+          extractTextFromImage(base64Image);
+        }
+        stopCamera();
+      }
+    }
+  };
 
   const [transactions, setTransactions] = useState<Transaction[]>([
     { id: 1, storeName: "스타벅스 강남점", amount: 15400, category: "카페", timestamp: new Date(2026, 3, 1, 14, 20).getTime(), type: "expense" },
@@ -870,7 +917,7 @@ export default function App() {
                     <button 
                       onClick={() => {
                         setFileMode("ai");
-                        setTimeout(() => fileInputRef.current?.click(), 0);
+                        startCamera();
                       }}
                       disabled={isAiLoading || isOcrLoading}
                       className="flex flex-col items-center justify-center gap-2 p-4 bg-blue-50 border-2 border-blue-100 rounded-2xl hover:bg-blue-100 transition-all disabled:opacity-50 group"
@@ -888,7 +935,7 @@ export default function App() {
                     <button 
                       onClick={() => {
                         setFileMode("ocr");
-                        setTimeout(() => fileInputRef.current?.click(), 0);
+                        startCamera();
                       }}
                       disabled={isAiLoading || isOcrLoading}
                       className="flex flex-col items-center justify-center gap-2 p-4 bg-amber-50 border-2 border-amber-100 rounded-2xl hover:bg-amber-100 transition-all disabled:opacity-50 group"
@@ -1020,6 +1067,53 @@ export default function App() {
                     추가하기
                   </button>
                 </div>
+              </div>
+            )}
+            {/* Camera Modal */}
+            {isCameraOpen && (
+              <div className="absolute inset-0 bg-black z-[100] flex flex-col">
+                <div className="p-4 flex justify-between items-center text-white">
+                  <span className="text-sm font-bold">{fileMode === "ai" ? "스마트 인식" : "텍스트 추출"}</span>
+                  <button onClick={stopCamera} className="p-2 hover:bg-white/10 rounded-full">
+                    <X size={24} />
+                  </button>
+                </div>
+                
+                <div className="flex-1 relative overflow-hidden flex items-center justify-center">
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Overlay for framing */}
+                  <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none">
+                    <div className="w-full h-full border-2 border-white/50 rounded-2xl"></div>
+                  </div>
+                </div>
+
+                <div className="p-8 flex flex-col items-center gap-6 bg-black/80 backdrop-blur-md">
+                  <div className="flex items-center gap-12">
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-3 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors"
+                    >
+                      <Download size={24} className="rotate-180" />
+                    </button>
+                    
+                    <button 
+                      onClick={capturePhoto}
+                      className="w-20 h-20 rounded-full border-4 border-white p-1 flex items-center justify-center group"
+                    >
+                      <div className="w-full h-full bg-white rounded-full group-active:scale-90 transition-transform"></div>
+                    </button>
+
+                    <div className="w-12 h-12"></div> {/* Spacer */}
+                  </div>
+                  <p className="text-white/60 text-[10px] font-medium">영수증이나 내역을 사각형 안에 맞춰주세요</p>
+                </div>
+
+                <canvas ref={canvasRef} className="hidden" />
               </div>
             )}
           </div>

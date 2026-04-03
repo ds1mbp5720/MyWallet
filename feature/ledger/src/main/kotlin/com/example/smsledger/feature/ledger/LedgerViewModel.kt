@@ -11,6 +11,23 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
 import java.util.regex.Pattern
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
+import com.google.ai.client.generativeai.type.generationConfig
+import android.graphics.Bitmap
+import android.content.Context
+import android.graphics.BitmapFactory
+import android.net.Uri
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class AiTransactionResult(
+    val storeName: String,
+    val amount: Long,
+    val category: String,
+    val type: String
+)
 
 data class LedgerState(
     val transactions: List<Transaction> = emptyList(),
@@ -57,6 +74,14 @@ class LedgerViewModel(
     private val deleteCategoryUseCase: DeleteCategoryUseCase
 ) : ViewModel() {
 
+    private val generativeModel = GenerativeModel(
+        modelName = "gemini-3-flash-preview",
+        apiKey = System.getProperty("GEMINI_API_KEY") ?: "",
+        generationConfig = generationConfig {
+            responseMimeType = "application/json"
+        }
+    )
+
     private val _state = MutableStateFlow(LedgerState())
     val state: StateFlow<LedgerState> = _state.asStateFlow()
 
@@ -90,6 +115,48 @@ class LedgerViewModel(
             is LedgerIntent.Search -> {
                 _state.update { it.copy(searchQuery = intent.query) }
                 observeTransactions()
+            }
+        }
+    }
+
+    fun processImage(context: Context, uri: Uri, isOcr: Boolean, onResult: (AiTransactionResult?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val bitmap = BitmapFactory.decodeStream(inputStream)
+                processBitmap(bitmap, isOcr, onResult)
+            } catch (e: Exception) {
+                onResult(null)
+            }
+        }
+    }
+
+    fun processBitmap(bitmap: Bitmap, isOcr: Boolean, onResult: (AiTransactionResult?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val prompt = if (isOcr) {
+                    "이 이미지에서 보이는 모든 텍스트를 읽어서 JSON 형식으로 응답해줘: {\"text\": \"추출된 텍스트 전체\"}"
+                } else {
+                    "이 영수증 또는 결제 내역 이미지에서 정보를 추출해줘. JSON 형식으로 응답해: {\"storeName\": \"상점명\", \"amount\": 12345, \"category\": \"식비/카페/교통/쇼핑/생활/기타 중 하나\", \"type\": \"income 또는 expense\"}"
+                }
+
+                val inputContent = content {
+                    image(bitmap)
+                    text(prompt)
+                }
+
+                val response = generativeModel.generateContent(inputContent)
+                val text = response.text ?: ""
+                
+                if (isOcr) {
+                    // Simple OCR result handling
+                    onResult(AiTransactionResult(storeName = text, amount = 0, category = "기타", type = "expense"))
+                } else {
+                    val result = Json.decodeFromString<AiTransactionResult>(text)
+                    onResult(result)
+                }
+            } catch (e: Exception) {
+                onResult(null)
             }
         }
     }

@@ -1,7 +1,9 @@
 package com.example.smsledger.feature.ledger
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.layout.ExperimentalLayoutApi
 import androidx.compose.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,9 +16,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
+import android.graphics.Bitmap
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import com.example.smsledger.domain.model.Category
 import com.example.smsledger.domain.model.ParsingRule
 import com.example.smsledger.domain.model.Transaction
@@ -164,7 +176,9 @@ fun TransactionListView(state: LedgerState, viewModel: LedgerViewModel) {
                     }
                 },
                 colors = TextFieldDefaults.colors(
-                    containerColor = Color.Transparent,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     disabledIndicatorColor = Color.Transparent
@@ -753,12 +767,68 @@ fun AddTransactionDialog(
     onConfirm: (Long, String, String, TransactionType) -> Unit,
     onAddCategory: (String) -> Unit
 ) {
+    val context = LocalContext.current
     var amount by remember { mutableStateOf("") }
     var store by remember { mutableStateOf("") }
     var category by remember { mutableStateOf(state.categories.firstOrNull()?.name ?: "기타") }
     var type by remember { mutableStateOf(TransactionType.EXPENSE) }
     var expanded by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var isAiLoading by remember { mutableStateOf(false) }
+
+    // Image/Camera Launchers
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { 
+            isAiLoading = true
+            viewModel.processImage(context, it, isOcr = false) { result ->
+                isAiLoading = false
+                result?.let { res ->
+                    amount = res.amount.toString()
+                    store = res.storeName
+                    category = res.category
+                    type = if (res.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
+                }
+            }
+        }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        bitmap?.let {
+            isAiLoading = true
+            viewModel.processBitmap(it, isOcr = false) { result ->
+                isAiLoading = false
+                result?.let { res ->
+                    amount = res.amount.toString()
+                    store = res.storeName
+                    category = res.category
+                    type = if (res.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
+                }
+            }
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            cameraLauncher.launch()
+        }
+    }
+
+    fun handleCameraAction() {
+        when (PackageManager.PERMISSION_GRANTED) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
+                cameraLauncher.launch()
+            }
+            else -> {
+                permissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -784,7 +854,7 @@ fun AddTransactionDialog(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Surface(
-                            onClick = { /* AI Smart Recognition logic */ },
+                            onClick = { handleCameraAction() },
                             modifier = Modifier.weight(1f),
                             color = Color(0xFFEFF6FF),
                             shape = RoundedCornerShape(12.dp),
@@ -795,13 +865,20 @@ fun AddTransactionDialog(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFF2563EB))
+                                Icon(
+                                    imageVector = if (isAiLoading) Icons.Default.Refresh else Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = Color(0xFF2563EB)
+                                )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("스마트 인식", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
+                                Text(if (isAiLoading) "인식 중..." else "스마트 인식", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
                             }
                         }
                         Surface(
-                            onClick = { /* OCR logic */ },
+                            onClick = { 
+                                galleryLauncher.launch("image/*") 
+                            },
                             modifier = Modifier.weight(1f),
                             color = Color(0xFFFFFBEB),
                             shape = RoundedCornerShape(12.dp),
@@ -949,17 +1026,6 @@ fun AddTransactionDialog(
             }
         }
     )
-
-    if (showAddCategoryDialog) {
-        AddCategoryDialog(
-            onDismiss = { showAddCategoryDialog = false },
-            onConfirm = { 
-                onAddCategory(it)
-                category = it
-            }
-        )
-    }
-}
 
     if (showAddCategoryDialog) {
         AddCategoryDialog(
