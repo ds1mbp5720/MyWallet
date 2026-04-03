@@ -43,59 +43,28 @@ fun LedgerScreen(viewModel: LedgerViewModel) {
     var currentTab by remember { mutableStateOf(0) } // 0: List, 1: Stats, 2: Settings
 
     Scaffold(
-        containerColor = Color(0xFFF8FAFC), // Light slate background
+        modifier = Modifier.systemBarsPadding(),
+        containerColor = Color(0xFFF8FAFC),
         topBar = {
             Surface(
                 color = Color.White,
                 shadowElevation = 0.dp,
                 border = BorderStroke(1.dp, Color(0xFFF1F5F9))
             ) {
-                Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 8.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                "SMS 가계부",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF2563EB)
-                                )
+                        Text(
+                            "SMS 가계부",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF2563EB),
+                                fontSize = 20.sp
                             )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.clickable { /* Month Picker */ }
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        if (state.selectedMonth == 0) viewModel.handleIntent(LedgerIntent.ChangeMonth(11, state.selectedYear - 1))
-                                        else viewModel.handleIntent(LedgerIntent.ChangeMonth(state.selectedMonth - 1, state.selectedYear))
-                                    },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = Color(0xFF2563EB))
-                                }
-                                Text(
-                                    "${state.selectedYear}.${String.format("%02d", state.selectedMonth + 1)}",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1E293B)
-                                    ),
-                                    modifier = Modifier.padding(horizontal = 4.dp)
-                                )
-                                IconButton(
-                                    onClick = {
-                                        if (state.selectedMonth == 11) viewModel.handleIntent(LedgerIntent.ChangeMonth(0, state.selectedYear + 1))
-                                        else viewModel.handleIntent(LedgerIntent.ChangeMonth(state.selectedMonth + 1, state.selectedYear))
-                                    },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF2563EB))
-                                }
-                            }
-                        }
+                        )
                         Row {
                             IconButton(onClick = { currentTab = 0 }) {
                                 Icon(Icons.Default.List, contentDescription = null, tint = if(currentTab == 0) Color(0xFF2563EB) else Color(0xFF94A3B8))
@@ -106,6 +75,37 @@ fun LedgerScreen(viewModel: LedgerViewModel) {
                             IconButton(onClick = { currentTab = 2 }) {
                                 Icon(Icons.Default.Settings, contentDescription = null, tint = if(currentTab == 2) Color(0xFF2563EB) else Color(0xFF94A3B8))
                             }
+                        }
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    ) {
+                        IconButton(
+                            onClick = {
+                                if (state.selectedMonth == 0) viewModel.handleIntent(LedgerIntent.ChangeMonth(11, state.selectedYear - 1))
+                                else viewModel.handleIntent(LedgerIntent.ChangeMonth(state.selectedMonth - 1, state.selectedYear))
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = Color(0xFF2563EB))
+                        }
+                        Text(
+                            "${state.selectedYear}.${String.format("%02d", state.selectedMonth + 1)}",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF1E293B)
+                            ),
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                        IconButton(
+                            onClick = {
+                                if (state.selectedMonth == 11) viewModel.handleIntent(LedgerIntent.ChangeMonth(0, state.selectedYear + 1))
+                                else viewModel.handleIntent(LedgerIntent.ChangeMonth(state.selectedMonth + 1, state.selectedYear))
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF2563EB))
                         }
                     }
                 }
@@ -192,28 +192,28 @@ fun TransactionListView(state: LedgerState, viewModel: LedgerViewModel) {
         // Summary Card
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            color = Color(0xFFEFF6FF),
-            border = BorderStroke(1.dp, Color(0xFFDBEAFE))
+            shape = RoundedCornerShape(32.dp),
+            color = Color(0xFFF0F7FF),
+            border = BorderStroke(1.dp, Color(0xFFE0EFFF))
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(24.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("수입", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF64748B))
-                    Text(numberFormat.format(state.totalIncome), color = Color(0xFF2563EB), fontWeight = FontWeight.Bold)
+                    Text("수입", style = MaterialTheme.typography.bodyLarge, color = Color(0xFF64748B))
+                    Text("₩${state.totalIncome}", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold), color = Color(0xFF2563EB))
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("지출", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF64748B))
-                    Text(numberFormat.format(state.totalExpense), color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
+                    Text("지출", style = MaterialTheme.typography.bodyLarge, color = Color(0xFF64748B))
+                    Text("₩${state.totalExpense}", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold), color = Color(0xFFEF4444))
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider(color = Color(0xFFDBEAFE))
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = Color(0xFFE2E8F0).copy(alpha = 0.5f))
+                Spacer(modifier = Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("합계", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = Color(0xFF1E293B))
+                    Text("합계", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black), color = Color(0xFF1E293B))
                     Text(
-                        text = numberFormat.format(state.totalAmount),
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                        text = "₩${state.totalAmount}",
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
                         color = if (state.totalAmount >= 0) Color(0xFF2563EB) else Color(0xFFEF4444)
                     )
                 }
@@ -833,104 +833,104 @@ fun AddTransactionDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
-        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+        modifier = Modifier.padding(24.dp).fillMaxWidth(),
         content = {
             Surface(
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(32.dp),
                 color = Color.White,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
                     Text(
                         "내역 추가",
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
                         color = Color(0xFF1E293B)
                     )
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // AI/OCR Buttons
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Surface(
                             onClick = { handleCameraAction() },
-                            modifier = Modifier.weight(1f),
-                            color = Color(0xFFEFF6FF),
+                            modifier = Modifier.weight(1f).height(56.dp),
                             shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFF0F7FF),
                             border = BorderStroke(1.dp, Color(0xFFDBEAFE))
                         ) {
                             Row(
-                                modifier = Modifier.padding(vertical = 12.dp),
+                                modifier = Modifier.fillMaxSize(),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
                                     imageVector = if (isAiLoading) Icons.Default.Refresh else Icons.Default.AutoAwesome,
                                     contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                    tint = Color(0xFF2563EB)
+                                    tint = Color(0xFF2563EB),
+                                    modifier = Modifier.size(18.dp)
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(if (isAiLoading) "인식 중..." else "스마트 인식", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    if (isAiLoading) "인식 중..." else "스마트 인식",
+                                    color = Color(0xFF2563EB),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
                             }
                         }
                         Surface(
-                            onClick = { 
-                                galleryLauncher.launch("image/*") 
-                            },
-                            modifier = Modifier.weight(1f),
-                            color = Color(0xFFFFFBEB),
+                            onClick = { galleryLauncher.launch("image/*") },
+                            modifier = Modifier.weight(1f).height(56.dp),
                             shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFFFFBEB),
                             border = BorderStroke(1.dp, Color(0xFFFEF3C7))
                         ) {
                             Row(
-                                modifier = Modifier.padding(vertical = 12.dp),
+                                modifier = Modifier.fillMaxSize(),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.TextFields, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFFD97706))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("텍스트 추출", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD97706))
+                                Icon(Icons.Default.TextFields, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("텍스트 추출", color = Color(0xFFD97706), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-                    HorizontalDivider(color = Color(0xFFF1F5F9))
-                    Spacer(modifier = Modifier.height(20.dp))
-
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
                     // Type Toggle
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Surface(
                             onClick = { type = TransactionType.EXPENSE },
-                            modifier = Modifier.weight(1f),
-                            color = if (type == TransactionType.EXPENSE) Color(0xFFEF4444) else Color(0xFFF8FAFC),
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
                             shape = RoundedCornerShape(12.dp),
-                            border = if (type == TransactionType.EXPENSE) null else BorderStroke(1.dp, Color(0xFFE2E8F0))
+                            color = if (type == TransactionType.EXPENSE) Color.White else Color(0xFFF8FAFC),
+                            border = if (type == TransactionType.EXPENSE) BorderStroke(1.dp, Color(0xFFE2E8F0)) else null
                         ) {
-                            Box(modifier = Modifier.padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
-                                Text("지출", color = if (type == TransactionType.EXPENSE) Color.White else Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("지출", color = if (type == TransactionType.EXPENSE) Color(0xFF1E293B) else Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
                             }
                         }
                         Surface(
                             onClick = { type = TransactionType.INCOME },
-                            modifier = Modifier.weight(1f),
-                            color = if (type == TransactionType.INCOME) Color(0xFF2563EB) else Color(0xFFF8FAFC),
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
                             shape = RoundedCornerShape(12.dp),
-                            border = if (type == TransactionType.INCOME) null else BorderStroke(1.dp, Color(0xFFE2E8F0))
+                            color = if (type == TransactionType.INCOME) Color(0xFF2563EB) else Color(0xFFF8FAFC)
                         ) {
-                            Box(modifier = Modifier.padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
-                                Text("수입", color = if (type == TransactionType.INCOME) Color.White else Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("수입", color = if (type == TransactionType.INCOME) Color.White else Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
+                    
+                    Spacer(modifier = Modifier.height(20.dp))
+                    
                     OutlinedTextField(
                         value = amount,
                         onValueChange = { amount = it },
@@ -942,7 +942,9 @@ fun AddTransactionDialog(
                             unfocusedBorderColor = Color(0xFFE2E8F0)
                         )
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
                     OutlinedTextField(
                         value = store,
                         onValueChange = { store = it },
@@ -954,15 +956,17 @@ fun AddTransactionDialog(
                             unfocusedBorderColor = Color(0xFFE2E8F0)
                         )
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
                     
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Category Dropdown
                     Box(modifier = Modifier.fillMaxWidth()) {
                         OutlinedTextField(
                             value = category,
-                            onValueChange = {},
+                            onValueChange = { },
+                            readOnly = true,
                             label = { Text("카테고리") },
                             modifier = Modifier.fillMaxWidth(),
-                            readOnly = true,
                             shape = RoundedCornerShape(12.dp),
                             trailingIcon = {
                                 IconButton(onClick = { expanded = true }) {
@@ -974,7 +978,11 @@ fun AddTransactionDialog(
                                 unfocusedBorderColor = Color(0xFFE2E8F0)
                             )
                         )
-                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                            modifier = Modifier.fillMaxWidth(0.8f)
+                        ) {
                             state.categories.forEach { cat ->
                                 DropdownMenuItem(
                                     text = { Text(cat.name) },
@@ -1000,24 +1008,24 @@ fun AddTransactionDialog(
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
+                    
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         TextButton(
                             onClick = onDismiss,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f).height(56.dp)
                         ) {
                             Text("취소", color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
                         }
                         Button(
                             onClick = { onConfirm(amount.toLongOrNull() ?: 0L, store, category, type) },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
-                            shape = RoundedCornerShape(12.dp)
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
                         ) {
                             Text("추가", fontWeight = FontWeight.Bold)
                         }
