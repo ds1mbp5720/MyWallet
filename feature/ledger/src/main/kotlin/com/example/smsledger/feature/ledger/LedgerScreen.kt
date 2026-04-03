@@ -760,18 +760,18 @@ fun TransactionItem(
                         shape = RoundedCornerShape(6.dp),
                         modifier = Modifier.wrapContentSize()
                     ) {
-                        val truncatedCategory = if (transaction.category.length > 4) transaction.category.substring(0, 4) + ".." else transaction.category
+                        val truncatedCategory = if (transaction.category.length > 6) transaction.category.substring(0, 6) + ".." else transaction.category
                         Text(
                             truncatedCategory,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                            style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold),
                             color = Color(0xFF2563EB)
                         )
                     }
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         categories.forEach { category ->
                             DropdownMenuItem(
-                                text = { Text(category.name, fontSize = 13.sp) },
+                                text = { Text(category.name, fontSize = 16.sp) },
                                 onClick = {
                                     onCategoryChange(category.name)
                                     expanded = false
@@ -782,9 +782,9 @@ fun TransactionItem(
                         DropdownMenuItem(
                             text = { 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFF2563EB))
+                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color(0xFF2563EB))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("추가", fontSize = 13.sp, color = Color(0xFF2563EB), fontWeight = FontWeight.Bold)
+                                    Text("추가", fontSize = 16.sp, color = Color(0xFF2563EB), fontWeight = FontWeight.Bold)
                                 }
                             },
                             onClick = {
@@ -798,14 +798,14 @@ fun TransactionItem(
                 // Store Name
                 Text(
                     transaction.storeName,
-                    style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                    style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
                     color = Color(0xFF1E293B)
                 )
                 
                 // Date
                 Text(
                     transaction.date.toFormattedDate(),
-                    style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Medium),
+                    style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium),
                     color = Color(0xFF94A3B8)
                 )
             }
@@ -814,7 +814,7 @@ fun TransactionItem(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${transaction.amount.toKoreanCurrency()}",
-                    style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Black),
+                    style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Black),
                     color = if (transaction.type == TransactionType.INCOME) Color(0xFF2563EB) else Color(0xFFEF4444)
                 )
                 IconButton(
@@ -857,6 +857,8 @@ fun AddTransactionScreen(
     var showAddCategoryDialog by remember { mutableStateOf(false) }
     var isAiLoading by remember { mutableStateOf(false) }
     var isOcrMode by remember { mutableStateOf(false) }
+    var ocrResultText by remember { mutableStateOf("") }
+    var showOcrPreview by remember { mutableStateOf(false) }
 
     // Image/Camera Launchers
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -867,10 +869,15 @@ fun AddTransactionScreen(
             ledgerViewModel.processImage(context, it, isOcr = isOcrMode) { result ->
                 isAiLoading = false
                 result?.let { res ->
-                    amount = res.amount.toString()
-                    store = res.storeName
-                    category = res.category
-                    type = if (res.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
+                    if (isOcrMode) {
+                        ocrResultText = res.storeName // OCR result is stored in storeName in ViewModel
+                        showOcrPreview = true
+                    } else {
+                        amount = res.amount.toString()
+                        store = res.storeName
+                        category = res.category
+                        type = if (res.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
+                    }
                 }
             }
         }
@@ -884,10 +891,15 @@ fun AddTransactionScreen(
             ledgerViewModel.processBitmap(it, isOcr = isOcrMode) { result ->
                 isAiLoading = false
                 result?.let { res ->
-                    amount = res.amount.toString()
-                    store = res.storeName
-                    category = res.category
-                    type = if (res.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
+                    if (isOcrMode) {
+                        ocrResultText = res.storeName
+                        showOcrPreview = true
+                    } else {
+                        amount = res.amount.toString()
+                        store = res.storeName
+                        category = res.category
+                        type = if (res.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
+                    }
                 }
             }
         }
@@ -976,7 +988,7 @@ fun AddTransactionScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Smart Recognition
+                    // Smart Recognition (Camera)
                     Surface(
                         onClick = { 
                             isOcrMode = false
@@ -999,17 +1011,17 @@ fun AddTransactionScreen(
                             ) {
                                 Box(modifier = Modifier.padding(8.dp)) {
                                     if (isAiLoading && !isOcrMode) {
-                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color(0xFF2563EB))
+                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = Color(0xFF2563EB))
                                     } else {
-                                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF2563EB), modifier = Modifier.size(20.dp))
+                                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF2563EB), modifier = Modifier.size(24.dp))
                                     }
                                 }
                             }
-                            Text("스마트 인식", color = Color(0xFF2563EB), fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Text("스마트 인식", color = Color(0xFF2563EB), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                     
-                    // Text Extraction
+                    // Text Extraction (Camera)
                     Surface(
                         onClick = { 
                             isOcrMode = true
@@ -1032,13 +1044,42 @@ fun AddTransactionScreen(
                             ) {
                                 Box(modifier = Modifier.padding(8.dp)) {
                                     if (isAiLoading && isOcrMode) {
-                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color(0xFFD97706))
+                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = Color(0xFFD97706))
                                     } else {
-                                        Icon(Icons.Default.TextFields, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(20.dp))
+                                        Icon(Icons.Default.CameraAlt, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(24.dp))
                                     }
                                 }
                             }
-                            Text("텍스트 추출", color = Color(0xFFD97706), fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Text("카메라 OCR", color = Color(0xFFD97706), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+
+                    // Text Extraction (Album)
+                    Surface(
+                        onClick = { 
+                            isOcrMode = true
+                            galleryLauncher.launch("image/*")
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFFF0FDF4),
+                        border = BorderStroke(2.dp, Color(0xFFDCFCE7))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color.White,
+                                shadowElevation = 2.dp
+                            ) {
+                                Box(modifier = Modifier.padding(8.dp)) {
+                                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(24.dp))
+                                }
+                            }
+                            Text("앨범 OCR", color = Color(0xFF16A34A), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 }
@@ -1101,16 +1142,16 @@ fun AddTransactionScreen(
                 
                 // Store Name Field (Web Style: Bottom Border)
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("상점명", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
+                    Text("상점명", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
                     BasicTextField(
                         value = store,
                         onValueChange = { store = it },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        textStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF1E293B)),
+                        textStyle = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color(0xFF1E293B)),
                         decorationBox = { innerTextField ->
                             Column {
                                 Box(modifier = Modifier.fillMaxWidth()) {
-                                    if (store.isEmpty()) Text("예: 스타벅스", color = Color(0xFFCBD5E1), fontSize = 14.sp)
+                                    if (store.isEmpty()) Text("예: 스타벅스", color = Color(0xFFCBD5E1), fontSize = 18.sp)
                                     innerTextField()
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -1124,17 +1165,17 @@ fun AddTransactionScreen(
                 
                 // Amount Field (Web Style: Bottom Border)
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("금액", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
+                    Text("금액", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
                     BasicTextField(
                         value = amount,
                         onValueChange = { amount = it },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        textStyle = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B)),
+                        textStyle = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B)),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         decorationBox = { innerTextField ->
                             Column {
                                 Box(modifier = Modifier.fillMaxWidth()) {
-                                    if (amount.isEmpty()) Text("0", color = Color(0xFFCBD5E1), fontSize = 14.sp)
+                                    if (amount.isEmpty()) Text("0", color = Color(0xFFCBD5E1), fontSize = 18.sp)
                                     innerTextField()
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -1148,7 +1189,7 @@ fun AddTransactionScreen(
                 
                 // Category Selection (Web Style: Chip Flow)
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("카테고리", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
+                    Text("카테고리", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
@@ -1163,8 +1204,8 @@ fun AddTransactionScreen(
                             ) {
                                 Text(
                                     cat.name,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (category == cat.name) Color.White else Color(0xFF64748B)
                                 )
@@ -1178,8 +1219,8 @@ fun AddTransactionScreen(
                         ) {
                             Text(
                                 "+ 추가",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                fontSize = 10.sp,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF2563EB)
                             )
@@ -1192,7 +1233,7 @@ fun AddTransactionScreen(
                 // Add Button (Web Style: Full Width)
                 Button(
                     onClick = { onConfirm(amount.toLongOrNull() ?: 0L, store, category, type) },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(64.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
@@ -1200,9 +1241,93 @@ fun AddTransactionScreen(
                     Text(
                         "추가하기", 
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 20.sp
                     )
                 }
+            }
+        }
+    }
+
+    // OCR Preview Dialog
+    if (showOcrPreview) {
+        Dialog(
+            onDismissRequest = { showOcrPreview = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .fillMaxHeight(0.8f),
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .fillMaxSize()
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "텍스트 추출 결과",
+                            style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold),
+                            color = Color(0xFF1E293B)
+                        )
+                        IconButton(onClick = { showOcrPreview = false }) {
+                            Icon(Icons.Default.Add, contentDescription = "닫기", modifier = Modifier.rotate(45f), tint = Color(0xFF94A3B8))
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        "아래 텍스트를 길게 눌러 선택하고 복사할 수 있습니다.",
+                        fontSize = 14.sp,
+                        color = Color(0xFF64748B),
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    ) {
+                        Box(modifier = Modifier.padding(16.dp)) {
+                            androidx.compose.foundation.text.selection.SelectionContainer {
+                                Text(
+                                    text = ocrResultText,
+                                    style = TextStyle(
+                                        fontSize = 16.sp,
+                                        lineHeight = 24.sp,
+                                        color = Color(0xFF334155)
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Button(
+                        onClick = { showOcrPreview = false },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
+                    ) {
+                        Text("확인", style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold))
+                    }
+                }
+            }
+        }
+    }
             }
         }
     }
