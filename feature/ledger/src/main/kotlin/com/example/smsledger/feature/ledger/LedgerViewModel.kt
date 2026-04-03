@@ -197,8 +197,9 @@ class LedgerViewModel(
         
         for (rule in rules) {
             // Check sender if specified
-            if (!rule.senderNumber.isNullOrBlank() && sender != null) {
-                if (!sender.contains(rule.senderNumber)) continue
+            val ruleSender = rule.senderNumber
+            if (!ruleSender.isNullOrBlank() && sender != null) {
+                if (!sender.contains(ruleSender)) continue
             }
 
             try {
