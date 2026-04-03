@@ -3,6 +3,7 @@ package com.example.smsledger.data.local
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.smsledger.domain.model.ParsingRule
+import com.example.smsledger.domain.model.TransactionType
 
 @Entity(tableName = "parsing_rules")
 data class ParsingRuleEntity(
@@ -11,7 +12,8 @@ data class ParsingRuleEntity(
     val senderNumber: String? = null,
     val amountPattern: String,
     val storePattern: String,
-    val isActive: Boolean = true
+    val isActive: Boolean = true,
+    val type: String = "EXPENSE"
 )
 
 fun ParsingRuleEntity.toDomain() = ParsingRule(
@@ -20,7 +22,8 @@ fun ParsingRuleEntity.toDomain() = ParsingRule(
     senderNumber = senderNumber,
     amountPattern = amountPattern,
     storePattern = storePattern,
-    isActive = isActive
+    isActive = isActive,
+    type = TransactionType.valueOf(type)
 )
 
 fun ParsingRule.toEntity() = ParsingRuleEntity(
@@ -29,5 +32,6 @@ fun ParsingRule.toEntity() = ParsingRuleEntity(
     senderNumber = senderNumber,
     amountPattern = amountPattern,
     storePattern = storePattern,
-    isActive = isActive
+    isActive = isActive,
+    type = type.name
 )

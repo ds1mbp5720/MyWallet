@@ -211,7 +211,7 @@ class LedgerViewModel(
                     val amount = amountMatcher.group(1).replace(",", "").toLongOrNull() ?: 0L
                     val store = if (storeMatcher.find()) storeMatcher.group(1).trim() else "알 수 없음"
                     viewModelScope.launch {
-                        addTransactionUseCase(Transaction(amount = amount, storeName = store, originalMessage = body))
+                        addTransactionUseCase(Transaction(amount = amount, storeName = store, originalMessage = body, type = rule.type))
                     }
                     return // Match found, stop processing other rules
                 }

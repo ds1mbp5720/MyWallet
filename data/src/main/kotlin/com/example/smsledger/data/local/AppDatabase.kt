@@ -3,7 +3,7 @@ package com.example.smsledger.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 
-@Database(entities = [TransactionEntity::class, ParsingRuleEntity::class, CategoryEntity::class], version = 3)
+@Database(entities = [TransactionEntity::class, ParsingRuleEntity::class, CategoryEntity::class], version = 4)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
     abstract fun parsingRuleDao(): ParsingRuleDao

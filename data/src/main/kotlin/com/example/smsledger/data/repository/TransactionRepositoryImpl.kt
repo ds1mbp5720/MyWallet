@@ -3,6 +3,7 @@ package com.example.smsledger.data.repository
 import com.example.smsledger.data.local.TransactionDao
 import com.example.smsledger.data.local.TransactionEntity
 import com.example.smsledger.domain.model.Transaction
+import com.example.smsledger.domain.model.TransactionType
 import com.example.smsledger.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -33,7 +34,8 @@ class TransactionRepositoryImpl(private val dao: TransactionDao) : TransactionRe
         storeName = storeName,
         date = date,
         category = category,
-        originalMessage = originalMessage
+        originalMessage = originalMessage,
+        type = TransactionType.valueOf(type)
     )
 
     private fun Transaction.toEntity() = TransactionEntity(
@@ -42,6 +44,7 @@ class TransactionRepositoryImpl(private val dao: TransactionDao) : TransactionRe
         storeName = storeName,
         date = date,
         category = category,
-        originalMessage = originalMessage
+        originalMessage = originalMessage,
+        type = type.name
     )
 }

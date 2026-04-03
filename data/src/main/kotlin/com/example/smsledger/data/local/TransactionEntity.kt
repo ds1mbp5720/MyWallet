@@ -10,5 +10,6 @@ data class TransactionEntity(
     val storeName: String,
     val date: Long,
     val category: String,
-    val originalMessage: String
+    val originalMessage: String,
+    val type: String = "EXPENSE"
 )
