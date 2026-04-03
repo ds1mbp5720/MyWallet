@@ -294,6 +294,8 @@ fun SettingsView(state: LedgerState, viewModel: LedgerViewModel) {
                             containerColor = Color.White,
                         ),
                         border = InputChipDefaults.inputChipBorder(
+                            enabled = true,
+                            selected = false,
                             borderColor = Color(0xFFEFF6FF)
                         ),
                         trailingIcon = {
