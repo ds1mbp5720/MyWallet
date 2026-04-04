@@ -25,4 +25,19 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     override suspend fun saveGeminiApiKey(key: String) {
         prefs.edit().putString("gemini_api_key", key).apply()
     }
+
+    override fun getUseSmartAi(): Flow<Boolean> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+            if (key == "use_smart_ai") {
+                trySend(sharedPreferences.getBoolean("use_smart_ai", true))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getBoolean("use_smart_ai", true))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun setUseSmartAi(use: Boolean) {
+        prefs.edit().putBoolean("use_smart_ai", use).apply()
+    }
 }

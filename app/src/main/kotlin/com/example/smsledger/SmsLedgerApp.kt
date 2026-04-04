@@ -35,6 +35,8 @@ class SmsLedgerApp : Application() {
     
     lateinit var getGeminiApiKeyUseCase: GetGeminiApiKeyUseCase
     lateinit var saveGeminiApiKeyUseCase: SaveGeminiApiKeyUseCase
+    lateinit var getUseSmartAiUseCase: GetUseSmartAiUseCase
+    lateinit var setUseSmartAiUseCase: SetUseSmartAiUseCase
 
     override fun onCreate() {
         super.onCreate()
@@ -62,6 +64,8 @@ class SmsLedgerApp : Application() {
         val settingsRepository = com.example.smsledger.data.repository.SettingsRepositoryImpl(this)
         getGeminiApiKeyUseCase = GetGeminiApiKeyUseCase(settingsRepository)
         saveGeminiApiKeyUseCase = SaveGeminiApiKeyUseCase(settingsRepository)
+        getUseSmartAiUseCase = GetUseSmartAiUseCase(settingsRepository)
+        setUseSmartAiUseCase = SetUseSmartAiUseCase(settingsRepository)
 
         // Pre-populate default categories if empty
         CoroutineScope(Dispatchers.IO).launch {

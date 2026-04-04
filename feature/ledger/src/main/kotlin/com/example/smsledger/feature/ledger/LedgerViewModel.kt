@@ -51,7 +51,8 @@ data class LedgerState(
     val parsingRules: List<ParsingRule> = emptyList(),
     val categories: List<Category> = emptyList(),
     val searchQuery: String = "",
-    val geminiApiKey: String = ""
+    val geminiApiKey: String = "",
+    val useSmartAi: Boolean = true
 )
 
 sealed class LedgerIntent {
@@ -69,6 +70,7 @@ sealed class LedgerIntent {
     data class DeleteCategory(val category: Category, val moveTransactions: Boolean = true) : LedgerIntent()
     data class Search(val query: String) : LedgerIntent()
     data class SaveApiKey(val key: String) : LedgerIntent()
+    data class ToggleSmartAi(val use: Boolean) : LedgerIntent()
 }
 
 class LedgerViewModel(
@@ -85,7 +87,9 @@ class LedgerViewModel(
     private val updateCategoryUseCase: UpdateCategoryUseCase,
     private val deleteCategoryUseCase: DeleteCategoryUseCase,
     private val getGeminiApiKeyUseCase: GetGeminiApiKeyUseCase,
-    private val saveGeminiApiKeyUseCase: SaveGeminiApiKeyUseCase
+    private val saveGeminiApiKeyUseCase: SaveGeminiApiKeyUseCase,
+    private val getUseSmartAiUseCase: GetUseSmartAiUseCase,
+    private val setUseSmartAiUseCase: SetUseSmartAiUseCase
 ) : ViewModel() {
 
     private var currentApiKey: String = ""
@@ -111,6 +115,7 @@ class LedgerViewModel(
     init {
         handleIntent(LedgerIntent.Load)
         observeApiKey()
+        observeUseSmartAi()
     }
 
     private fun observeApiKey() {
@@ -118,6 +123,14 @@ class LedgerViewModel(
             getGeminiApiKeyUseCase().collect { key ->
                 currentApiKey = key
                 _state.update { it.copy(geminiApiKey = key) }
+            }
+        }
+    }
+
+    private fun observeUseSmartAi() {
+        viewModelScope.launch {
+            getUseSmartAiUseCase().collect { use ->
+                _state.update { it.copy(useSmartAi = use) }
             }
         }
     }
@@ -146,6 +159,7 @@ class LedgerViewModel(
                 _state.update { it.copy(searchQuery = intent.query) }
             }
             is LedgerIntent.SaveApiKey -> viewModelScope.launch { saveGeminiApiKeyUseCase(intent.key) }
+            is LedgerIntent.ToggleSmartAi -> viewModelScope.launch { setUseSmartAiUseCase(intent.use) }
         }
     }
 
@@ -164,12 +178,16 @@ class LedgerViewModel(
     fun processBitmap(bitmap: Bitmap, isOcr: Boolean, onResult: (AiTransactionResult?) -> Unit) {
         viewModelScope.launch {
             try {
-                if (isOcr) {
+                val useSmartAi = _state.value.useSmartAi
+                
+                // If smart AI is OFF, always use ML Kit for OCR
+                if (!useSmartAi) {
                     val text = recognizeTextWithMlKit(bitmap)
                     onResult(AiTransactionResult(storeName = text ?: "", amount = 0, category = "기타", type = "expense"))
                     return@launch
                 }
 
+                // If smart AI is ON, use Gemini
                 val prompt = "이 영수증 또는 결제 내역 이미지에서 정보를 추출해줘. JSON 형식으로 응답해: {\"storeName\": \"상점명\", \"amount\": 12345, \"category\": \"식비/카페/교통/쇼핑/생활/기타 중 하나\", \"type\": \"income 또는 expense\"}"
 
                 val inputContent = content {

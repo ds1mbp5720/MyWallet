@@ -47,6 +47,46 @@ fun SettingsView(
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
                     color = Color(0xFF1E293B)
                 )
+                
+                // Smart AI Toggle
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (state.useSmartAi) Color(0xFFEFF6FF) else Color(0xFFF8FAFC),
+                    border = BorderStroke(1.dp, if (state.useSmartAi) Color(0xFFDBEAFE) else Color(0xFFF1F5F9))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .clickable { viewModel.handleIntent(LedgerIntent.ToggleSmartAi(!state.useSmartAi)) }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "스마트 인식 활성화",
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                color = if (state.useSmartAi) Color(0xFF2563EB) else Color(0xFF1E293B)
+                            )
+                            Text(
+                                "활성화 시 Gemini AI가 영수증을 분석하여 상점명과 금액을 자동으로 입력합니다.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (state.useSmartAi) Color(0xFF3B82F6) else Color(0xFF64748B)
+                            )
+                        }
+                        Switch(
+                            checked = state.useSmartAi,
+                            onCheckedChange = { viewModel.handleIntent(LedgerIntent.ToggleSmartAi(it)) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = Color(0xFF2563EB),
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = Color(0xFFCBD5E1)
+                            )
+                        )
+                    }
+                }
+
                 Text(
                     "영수증 사진 분석을 위한 Gemini API 키를 입력하세요.",
                     style = MaterialTheme.typography.bodySmall,

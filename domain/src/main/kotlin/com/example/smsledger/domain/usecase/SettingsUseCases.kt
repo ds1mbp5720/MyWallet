@@ -10,3 +10,11 @@ class GetGeminiApiKeyUseCase(private val repository: SettingsRepository) {
 class SaveGeminiApiKeyUseCase(private val repository: SettingsRepository) {
     suspend operator fun invoke(key: String) = repository.saveGeminiApiKey(key)
 }
+
+class GetUseSmartAiUseCase(private val repository: SettingsRepository) {
+    operator fun invoke(): Flow<Boolean> = repository.getUseSmartAi()
+}
+
+class SetUseSmartAiUseCase(private val repository: SettingsRepository) {
+    suspend operator fun invoke(use: Boolean) = repository.setUseSmartAi(use)
+}

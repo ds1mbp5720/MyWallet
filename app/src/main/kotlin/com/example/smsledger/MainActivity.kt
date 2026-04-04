@@ -39,7 +39,9 @@ class MainActivity : ComponentActivity() {
                     app.updateCategoryUseCase,
                     app.deleteCategoryUseCase,
                     app.getGeminiApiKeyUseCase,
-                    app.saveGeminiApiKeyUseCase
+                    app.saveGeminiApiKeyUseCase,
+                    app.getUseSmartAiUseCase,
+                    app.setUseSmartAiUseCase
                 ) as T
             }
         }
