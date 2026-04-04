@@ -1,5 +1,6 @@
 package com.example.smsledger.feature.ledger
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -29,6 +30,13 @@ fun LedgerScreen(viewModel: LedgerViewModel) {
     var showAddRuleScreen by remember { mutableStateOf(false) }
     var editingCategoryForScreen by remember { mutableStateOf<Category?>(null) }
     var editingRuleForScreen by remember { mutableStateOf<ParsingRule?>(null) }
+
+    // Back button handling for bottom sheets
+    BackHandler(enabled = showAddDialog || showAddCategoryScreen || showAddRuleScreen) {
+        if (showAddDialog) showAddDialog = false
+        else if (showAddCategoryScreen) showAddCategoryScreen = false
+        else if (showAddRuleScreen) showAddRuleScreen = false
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(

@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
@@ -32,6 +33,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
+import android.content.Context
+import android.content.ClipboardManager
+import android.content.ClipData
 import android.widget.Toast
 import com.example.smsledger.domain.model.TransactionType
 
@@ -54,6 +58,11 @@ fun AddTransactionScreen(
     var ocrResultText by remember { mutableStateOf("") }
     var showOcrPreview by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
+
+    // Back button handling for OCR preview
+    BackHandler(enabled = showOcrPreview) {
+        showOcrPreview = false
+    }
 
     // Update category if it was changed externally (e.g. added via bottom sheet)
     LaunchedEffect(state.categories) {
@@ -537,8 +546,8 @@ fun AddTransactionScreen(
                     ) {
                         Button(
                             onClick = { 
-                                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.Context.CLIPBOARD_SERVICE as android.content.ClipboardManager
-                                val clip = android.content.ClipData.newPlainText("OCR Result", ocrResultText)
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val clip = ClipData.newPlainText("OCR Result", ocrResultText)
                                 clipboard.setPrimaryClip(clip)
                                 Toast.makeText(context, "클립보드에 복사되었습니다.", Toast.LENGTH_SHORT).show()
                             },

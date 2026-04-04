@@ -109,7 +109,6 @@ class LedgerViewModel(
             is LedgerIntent.ParseSms -> parseSms(intent.body, intent.sender)
             is LedgerIntent.ChangeMonth -> {
                 _state.update { it.copy(selectedMonth = intent.month, selectedYear = intent.year) }
-                observeTransactions()
             }
             is LedgerIntent.AddParsingRule -> viewModelScope.launch { addParsingRuleUseCase(intent.rule) }
             is LedgerIntent.UpdateParsingRule -> viewModelScope.launch { updateParsingRuleUseCase(intent.rule) }
@@ -119,7 +118,6 @@ class LedgerViewModel(
             is LedgerIntent.DeleteCategory -> deleteCategory(intent.category, intent.moveTransactions)
             is LedgerIntent.Search -> {
                 _state.update { it.copy(searchQuery = intent.query) }
-                observeTransactions()
             }
         }
     }
@@ -223,14 +221,16 @@ class LedgerViewModel(
 
     private fun observeTransactions() {
         viewModelScope.launch {
-            getTransactionsUseCase().collect { list ->
-                val month = _state.value.selectedMonth
-                val year = _state.value.selectedYear
-                
+            combine(
+                getTransactionsUseCase(),
+                _state.map { it.selectedMonth }.distinctUntilChanged(),
+                _state.map { it.selectedYear }.distinctUntilChanged(),
+                _state.map { it.searchQuery }.distinctUntilChanged()
+            ) { list, month, year, query ->
                 val filteredList = list.filter { 
                     val cal = Calendar.getInstance().apply { timeInMillis = it.date }
                     val matchesMonth = cal.get(Calendar.MONTH) == month && cal.get(Calendar.YEAR) == year
-                    val matchesSearch = it.storeName.contains(_state.value.searchQuery, ignoreCase = true)
+                    val matchesSearch = it.storeName.contains(query, ignoreCase = true)
                     matchesMonth && matchesSearch
                 }
 
@@ -243,11 +243,13 @@ class LedgerViewModel(
                   .sortedByDescending { it.second }
                   .toMap()
 
+                Triple(filteredList, income to expense, stats)
+            }.collect { (filteredList, totals, stats) ->
                 _state.update { it.copy(
-                    transactions = list, // Keep all for the list view, or filter if desired
-                    totalAmount = income - expense,
-                    totalIncome = income,
-                    totalExpense = expense,
+                    transactions = filteredList,
+                    totalAmount = totals.first - totals.second,
+                    totalIncome = totals.first,
+                    totalExpense = totals.second,
                     monthlyStats = stats
                 ) }
             }
