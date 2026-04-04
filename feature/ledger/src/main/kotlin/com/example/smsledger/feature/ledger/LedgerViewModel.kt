@@ -212,7 +212,8 @@ class LedgerViewModel(
                 // If smart AI is ON, use Gemini
                 val prompt = """
                     이 영수증 또는 결제 내역 이미지에서 정보를 추출해줘. 
-                    JSON 형식으로 응답해: 
+                    반드시 단 하나의 JSON 객체만 응답해. 리스트([]) 형식이 아닌 객체({}) 형식이어야 해.
+                    JSON 형식: 
                     {
                         "storeName": "가장 유력한 상점명", 
                         "amount": 12345, 
@@ -231,7 +232,7 @@ class LedgerViewModel(
                 val responseText = response.text ?: ""
                 
                 // Clean markdown if present
-                val cleanedJson = if (responseText.contains("```json")) {
+                var cleanedJson = if (responseText.contains("```json")) {
                     responseText.substringAfter("```json").substringBeforeLast("```").trim()
                 } else if (responseText.contains("```")) {
                     responseText.substringAfter("```").substringBeforeLast("```").trim()
@@ -239,7 +240,24 @@ class LedgerViewModel(
                     responseText.trim()
                 }
                 
-                val result = json.decodeFromString<AiTransactionResult>(cleanedJson)
+                // Handle cases where AI returns a list instead of an object
+                val result = try {
+                    json.decodeFromString<AiTransactionResult>(cleanedJson)
+                } catch (e: Exception) {
+                    try {
+                        // Try parsing as a list and take the first element
+                        val list = json.decodeFromString<List<AiTransactionResult>>(cleanedJson)
+                        list.firstOrNull() ?: throw e
+                    } catch (e2: Exception) {
+                        // If it's still failing, try to extract the first object if it's a list
+                        if (cleanedJson.startsWith("[") && cleanedJson.endsWith("]")) {
+                            val inner = cleanedJson.substring(1, cleanedJson.length - 1).trim()
+                            json.decodeFromString<AiTransactionResult>(inner)
+                        } else {
+                            throw e
+                        }
+                    }
+                }
                 onResult(result)
             } catch (e: Exception) {
                 android.util.Log.e("LedgerViewModel", "AI Error: ${e.message}", e)
