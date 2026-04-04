@@ -2,6 +2,7 @@ package com.example.smsledger.feature.ledger
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -39,7 +40,10 @@ fun AddCategoryScreen(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = false) { },
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { },
             shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
             color = Color.White
         ) {
@@ -48,6 +52,7 @@ fun AddCategoryScreen(
                     .fillMaxWidth()
                     .padding(24.dp)
                     .navigationBarsPadding()
+                    .imePadding()
             ) {
                 Box(
                     modifier = Modifier

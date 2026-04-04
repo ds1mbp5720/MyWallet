@@ -11,6 +11,7 @@ import androidx.activity.result.launch
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -79,16 +80,18 @@ fun AddTransactionScreen(
             isAiLoading = true
             ledgerViewModel.processImage(context, it, isOcr = isOcrMode) { result ->
                 isAiLoading = false
-                result?.let { res ->
+                if (result != null) {
                     if (isOcrMode) {
-                        ocrResultText = res.storeName // OCR result is stored in storeName in ViewModel
+                        ocrResultText = result.storeName // OCR result is stored in storeName in ViewModel
                         showOcrPreview = true
                     } else {
-                        amount = res.amount.toString()
-                        store = res.storeName
-                        category = res.category
-                        type = if (res.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
+                        amount = result.amount.toString()
+                        store = result.storeName
+                        category = result.category
+                        type = if (result.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
                     }
+                } else {
+                    Toast.makeText(context, "인식에 실패했습니다. 다시 시도해주세요.", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -101,16 +104,20 @@ fun AddTransactionScreen(
             isAiLoading = true
             ledgerViewModel.processBitmap(it, isOcr = isOcrMode) { result ->
                 isAiLoading = false
-                result?.let { res ->
+                if (result != null) {
                     if (isOcrMode) {
-                        ocrResultText = res.storeName
+                        ocrResultText = result.storeName
                         showOcrPreview = true
                     } else {
-                        amount = res.amount.toString()
-                        store = res.storeName
-                        category = res.category
-                        type = if (res.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
+                        amount = result.amount.toString()
+                        store = result.storeName
+                        category = result.category
+                        type = if (result.type == if (result.type == "income") "income" else "expense") {
+                            if (result.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
+                        } else TransactionType.EXPENSE
                     }
+                } else {
+                    Toast.makeText(context, "인식에 실패했습니다. 다시 시도해주세요.", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -149,7 +156,10 @@ fun AddTransactionScreen(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = false) { } // Prevent click through
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { } // Prevent click through
                 .graphicsLayer {
                     translationY = 0f
                 },
@@ -161,6 +171,7 @@ fun AddTransactionScreen(
                     .fillMaxWidth()
                     .padding(24.dp)
                     .navigationBarsPadding()
+                    .imePadding()
             ) {
                 // Bottom Sheet Handle
                 Box(
@@ -465,7 +476,10 @@ fun AddTransactionScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(enabled = false) { }
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { }
                     .graphicsLayer { translationY = 0f },
                 shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
                 color = Color.White
@@ -475,6 +489,7 @@ fun AddTransactionScreen(
                         .fillMaxWidth()
                         .padding(24.dp)
                         .navigationBarsPadding()
+                        .imePadding()
                 ) {
                     // Handle
                     Box(
