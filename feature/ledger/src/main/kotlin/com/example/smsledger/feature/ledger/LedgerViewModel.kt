@@ -50,7 +50,8 @@ data class LedgerState(
     val selectedYear: Int = Calendar.getInstance().get(Calendar.YEAR),
     val parsingRules: List<ParsingRule> = emptyList(),
     val categories: List<Category> = emptyList(),
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val geminiApiKey: String = ""
 )
 
 sealed class LedgerIntent {
@@ -67,6 +68,7 @@ sealed class LedgerIntent {
     data class UpdateCategoryName(val category: Category, val newName: String) : LedgerIntent()
     data class DeleteCategory(val category: Category, val moveTransactions: Boolean = true) : LedgerIntent()
     data class Search(val query: String) : LedgerIntent()
+    data class SaveApiKey(val key: String) : LedgerIntent()
 }
 
 class LedgerViewModel(
@@ -81,16 +83,25 @@ class LedgerViewModel(
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val addCategoryUseCase: AddCategoryUseCase,
     private val updateCategoryUseCase: UpdateCategoryUseCase,
-    private val deleteCategoryUseCase: DeleteCategoryUseCase
+    private val deleteCategoryUseCase: DeleteCategoryUseCase,
+    private val getGeminiApiKeyUseCase: GetGeminiApiKeyUseCase,
+    private val saveGeminiApiKeyUseCase: SaveGeminiApiKeyUseCase
 ) : ViewModel() {
 
-    private val generativeModel = GenerativeModel(
-        modelName = "gemini-3-flash-preview",
-        apiKey = System.getProperty("GEMINI_API_KEY") ?: System.getenv("GEMINI_API_KEY") ?: "",
-        generationConfig = generationConfig {
-            responseMimeType = "application/json"
+    private var currentApiKey: String = ""
+
+    private fun getGenerativeModel(): GenerativeModel {
+        val apiKey = currentApiKey.ifBlank {
+            System.getProperty("GEMINI_API_KEY") ?: System.getenv("GEMINI_API_KEY") ?: ""
         }
-    )
+        return GenerativeModel(
+            modelName = "gemini-3-flash-preview",
+            apiKey = apiKey,
+            generationConfig = generationConfig {
+                responseMimeType = "application/json"
+            }
+        )
+    }
 
     private val _state = MutableStateFlow(LedgerState())
     val state: StateFlow<LedgerState> = _state.asStateFlow()
@@ -99,6 +110,16 @@ class LedgerViewModel(
 
     init {
         handleIntent(LedgerIntent.Load)
+        observeApiKey()
+    }
+
+    private fun observeApiKey() {
+        viewModelScope.launch {
+            getGeminiApiKeyUseCase().collect { key ->
+                currentApiKey = key
+                _state.update { it.copy(geminiApiKey = key) }
+            }
+        }
     }
 
     fun handleIntent(intent: LedgerIntent) {
@@ -124,6 +145,7 @@ class LedgerViewModel(
             is LedgerIntent.Search -> {
                 _state.update { it.copy(searchQuery = intent.query) }
             }
+            is LedgerIntent.SaveApiKey -> viewModelScope.launch { saveGeminiApiKeyUseCase(intent.key) }
         }
     }
 
@@ -176,7 +198,7 @@ class LedgerViewModel(
                     text(prompt)
                 }
 
-                val response = generativeModel.generateContent(inputContent)
+                val response = getGenerativeModel().generateContent(inputContent)
                 val responseText = response.text ?: ""
                 
                 val result = Json.decodeFromString<AiTransactionResult>(responseText)

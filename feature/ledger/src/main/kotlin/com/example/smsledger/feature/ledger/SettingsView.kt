@@ -32,12 +32,48 @@ fun SettingsView(
     var categoryToDelete by remember { mutableStateOf<Category?>(null) }
     var testSms by remember { mutableStateOf("") }
     var testSender by remember { mutableStateOf("") }
+    var apiKeyInput by remember(state.geminiApiKey) { mutableStateOf(state.geminiApiKey) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
+        // Gemini API Key Section
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "AI 스마트 인식 설정",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                    color = Color(0xFF1E293B)
+                )
+                Text(
+                    "영수증 사진 분석을 위한 Gemini API 키를 입력하세요.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF64748B)
+                )
+                OutlinedTextField(
+                    value = apiKeyInput,
+                    onValueChange = { apiKeyInput = it },
+                    label = { Text("Gemini API Key") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    placeholder = { Text("AI Studio에서 발급받은 키를 입력하세요") },
+                    trailingIcon = {
+                        if (apiKeyInput != state.geminiApiKey) {
+                            TextButton(onClick = { 
+                                viewModel.handleIntent(LedgerIntent.SaveApiKey(apiKeyInput))
+                            }) {
+                                Text("저장", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                )
+            }
+        }
+
+        item { HorizontalDivider(color = Color(0xFFF1F5F9)) }
+
         // Category Management Section
         item {
             Column {

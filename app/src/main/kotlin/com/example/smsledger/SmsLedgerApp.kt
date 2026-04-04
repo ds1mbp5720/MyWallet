@@ -32,6 +32,9 @@ class SmsLedgerApp : Application() {
     lateinit var addCategoryUseCase: AddCategoryUseCase
     lateinit var updateCategoryUseCase: UpdateCategoryUseCase
     lateinit var deleteCategoryUseCase: DeleteCategoryUseCase
+    
+    lateinit var getGeminiApiKeyUseCase: GetGeminiApiKeyUseCase
+    lateinit var saveGeminiApiKeyUseCase: SaveGeminiApiKeyUseCase
 
     override fun onCreate() {
         super.onCreate()
@@ -55,6 +58,10 @@ class SmsLedgerApp : Application() {
         addCategoryUseCase = AddCategoryUseCase(categoryRepository)
         updateCategoryUseCase = UpdateCategoryUseCase(categoryRepository)
         deleteCategoryUseCase = DeleteCategoryUseCase(categoryRepository)
+
+        val settingsRepository = com.example.smsledger.data.repository.SettingsRepositoryImpl(this)
+        getGeminiApiKeyUseCase = GetGeminiApiKeyUseCase(settingsRepository)
+        saveGeminiApiKeyUseCase = SaveGeminiApiKeyUseCase(settingsRepository)
 
         // Pre-populate default categories if empty
         CoroutineScope(Dispatchers.IO).launch {
