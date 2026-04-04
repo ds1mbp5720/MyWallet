@@ -23,7 +23,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -274,7 +274,7 @@ class LedgerViewModel(
     private suspend fun recognizeTextWithMlKit(bitmap: Bitmap): com.google.mlkit.vision.text.Text? = suspendCoroutine { continuation ->
         try {
             val image = InputImage.fromBitmap(bitmap, 0)
-            val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+            val recognizer = TextRecognition.getClient(KoreanTextRecognizerOptions.Builder().build())
             recognizer.process(image)
                 .addOnSuccessListener { visionText ->
                     continuation.resume(visionText)
