@@ -23,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +41,12 @@ import android.content.ClipData
 import android.widget.Toast
 import com.example.smsledger.domain.model.TransactionType
 
+enum class SelectionStep {
+    NONE,
+    SELECTING_STORE,
+    SELECTING_AMOUNT
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AddTransactionScreen(
@@ -56,6 +63,8 @@ fun AddTransactionScreen(
     var type by remember { mutableStateOf(TransactionType.EXPENSE) }
     var isAiLoading by remember { mutableStateOf(false) }
     var isOcrMode by remember { mutableStateOf(false) }
+    var ocrTextBlocks by remember { mutableStateOf<List<String>>(emptyList()) }
+    var selectionStep by remember { mutableStateOf(SelectionStep.NONE) }
     var ocrResultText by remember { mutableStateOf("") }
     var showOcrPreview by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
@@ -81,10 +90,11 @@ fun AddTransactionScreen(
             ledgerViewModel.processImage(context, it, isOcr = isOcrMode) { result ->
                 isAiLoading = false
                 if (result != null) {
-                    if (isOcrMode) {
-                        ocrResultText = result.storeName // OCR result is stored in storeName in ViewModel
-                        showOcrPreview = true
+                    ocrTextBlocks = result.allTextBlocks
+                    if (ocrTextBlocks.isNotEmpty()) {
+                        selectionStep = SelectionStep.SELECTING_STORE
                     } else {
+                        // Fallback to auto-fill if no blocks found
                         amount = result.amount.toString()
                         store = result.storeName
                         category = result.category
@@ -105,16 +115,14 @@ fun AddTransactionScreen(
             ledgerViewModel.processBitmap(it, isOcr = isOcrMode) { result ->
                 isAiLoading = false
                 if (result != null) {
-                    if (isOcrMode) {
-                        ocrResultText = result.storeName
-                        showOcrPreview = true
+                    ocrTextBlocks = result.allTextBlocks
+                    if (ocrTextBlocks.isNotEmpty()) {
+                        selectionStep = SelectionStep.SELECTING_STORE
                     } else {
                         amount = result.amount.toString()
                         store = result.storeName
                         category = result.category
-                        type = if (result.type == if (result.type == "income") "income" else "expense") {
-                            if (result.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
-                        } else TransactionType.EXPENSE
+                        type = if (result.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
                     }
                 } else {
                     Toast.makeText(context, "인식에 실패했습니다. 다시 시도해주세요.", Toast.LENGTH_SHORT).show()
@@ -246,6 +254,72 @@ fun AddTransactionScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 // AI Buttons (Web Preview Style: Vertical)
+                if (selectionStep != SelectionStep.NONE) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF8FAFC), RoundedCornerShape(16.dp))
+                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                when (selectionStep) {
+                                    SelectionStep.SELECTING_STORE -> "상점명을 선택해주세요"
+                                    SelectionStep.SELECTING_AMOUNT -> "금액을 선택해주세요"
+                                    else -> ""
+                                },
+                                style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                                color = Color(0xFF2563EB)
+                            )
+                            TextButton(onClick = { selectionStep = SelectionStep.NONE }) {
+                                Text("취소", color = Color(0xFF64748B), fontSize = 12.sp)
+                            }
+                        }
+
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ocrTextBlocks.forEach { text ->
+                                Surface(
+                                    onClick = {
+                                        if (selectionStep == SelectionStep.SELECTING_STORE) {
+                                            store = text
+                                            selectionStep = SelectionStep.SELECTING_AMOUNT
+                                        } else if (selectionStep == SelectionStep.SELECTING_AMOUNT) {
+                                            // Extract numbers only for amount
+                                            val numeric = text.filter { it.isDigit() }
+                                            if (numeric.isNotEmpty()) {
+                                                amount = numeric
+                                                selectionStep = SelectionStep.NONE
+                                            } else {
+                                                Toast.makeText(context, "숫자가 포함된 텍스트를 선택해주세요.", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    },
+                                    color = Color.White,
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+                                ) {
+                                    Text(
+                                        text,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        style = TextStyle(fontSize = 12.sp),
+                                        color = Color(0xFF334155)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)

@@ -31,12 +31,14 @@ data class AiTransactionResult(
     val storeName: String,
     val amount: Long,
     val category: String,
-    val type: String
+    val type: String,
+    val allTextBlocks: List<String> = emptyList()
 )
 
 @Serializable
 data class OcrResult(
-    val text: String
+    val text: String,
+    val allTextBlocks: List<String> = emptyList()
 )
 
 data class LedgerState(
@@ -182,13 +184,31 @@ class LedgerViewModel(
                 
                 // If smart AI is OFF, always use ML Kit for OCR
                 if (!useSmartAi) {
-                    val text = recognizeTextWithMlKit(bitmap)
-                    onResult(AiTransactionResult(storeName = text ?: "", amount = 0, category = "기타", type = "expense"))
+                    val visionText = recognizeTextWithMlKit(bitmap)
+                    val textBlocks = visionText?.textBlocks?.map { it.text } ?: emptyList()
+                    val fullText = visionText?.text ?: ""
+                    onResult(AiTransactionResult(
+                        storeName = fullText, 
+                        amount = 0, 
+                        category = "기타", 
+                        type = "expense",
+                        allTextBlocks = textBlocks
+                    ))
                     return@launch
                 }
 
                 // If smart AI is ON, use Gemini
-                val prompt = "이 영수증 또는 결제 내역 이미지에서 정보를 추출해줘. JSON 형식으로 응답해: {\"storeName\": \"상점명\", \"amount\": 12345, \"category\": \"식비/카페/교통/쇼핑/생활/기타 중 하나\", \"type\": \"income 또는 expense\"}"
+                val prompt = """
+                    이 영수증 또는 결제 내역 이미지에서 정보를 추출해줘. 
+                    JSON 형식으로 응답해: 
+                    {
+                        "storeName": "가장 유력한 상점명", 
+                        "amount": 12345, 
+                        "category": "식비/카페/교통/쇼핑/생활/기타 중 하나", 
+                        "type": "income 또는 expense",
+                        "allTextBlocks": ["이미지에서 보이는 모든 개별 텍스트 조각들", "상점명", "금액", "날짜", "전화번호" 등]
+                    }
+                """.trimIndent()
 
                 val inputContent = content {
                     image(bitmap)
@@ -206,13 +226,13 @@ class LedgerViewModel(
         }
     }
 
-    private suspend fun recognizeTextWithMlKit(bitmap: Bitmap): String? = suspendCoroutine { continuation ->
+    private suspend fun recognizeTextWithMlKit(bitmap: Bitmap): com.google.mlkit.vision.text.Text? = suspendCoroutine { continuation ->
         try {
             val image = InputImage.fromBitmap(bitmap, 0)
             val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
             recognizer.process(image)
                 .addOnSuccessListener { visionText ->
-                    continuation.resume(visionText.text)
+                    continuation.resume(visionText)
                 }
                 .addOnFailureListener { e ->
                     continuation.resume(null)
