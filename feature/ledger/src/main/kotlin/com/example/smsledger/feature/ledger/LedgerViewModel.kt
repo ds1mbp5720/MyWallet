@@ -20,9 +20,6 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.Serializable
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -154,44 +151,21 @@ class LedgerViewModel(
             try {
                 val inputStream = context.contentResolver.openInputStream(uri)
                 val bitmap = BitmapFactory.decodeStream(inputStream)
-                if (isOcr) {
-                    val text = recognizeTextWithMlKit(bitmap)
-                    onResult(AiTransactionResult(storeName = text ?: "", amount = 0, category = "기타", type = "expense"))
-                } else {
-                    processBitmap(bitmap, false, onResult)
-                }
+                processBitmap(bitmap, isOcr, onResult)
             } catch (e: Exception) {
                 onResult(null)
             }
         }
     }
 
-    private suspend fun recognizeTextWithMlKit(bitmap: Bitmap): String? = suspendCoroutine { continuation ->
-        try {
-            val image = InputImage.fromBitmap(bitmap, 0)
-            val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-            recognizer.process(image)
-                .addOnSuccessListener { visionText ->
-                    continuation.resume(visionText.text)
-                }
-                .addOnFailureListener { e ->
-                    continuation.resume(null)
-                }
-        } catch (e: Exception) {
-            continuation.resume(null)
-        }
-    }
-
     fun processBitmap(bitmap: Bitmap, isOcr: Boolean, onResult: (AiTransactionResult?) -> Unit) {
         viewModelScope.launch {
             try {
-                if (isOcr) {
-                    val text = recognizeTextWithMlKit(bitmap)
-                    onResult(AiTransactionResult(storeName = text ?: "", amount = 0, category = "기타", type = "expense"))
-                    return@launch
+                val prompt = if (isOcr) {
+                    "이 이미지에 포함된 모든 텍스트를 최대한 정확하게 추출해줘. 한국어 텍스트를 특히 신경 써서 추출해줘. JSON 형식으로 응답해: {\"text\": \"추출된 전체 텍스트\"}"
+                } else {
+                    "이 영수증 또는 결제 내역 이미지에서 정보를 추출해줘. JSON 형식으로 응답해: {\"storeName\": \"상점명\", \"amount\": 12345, \"category\": \"식비/카페/교통/쇼핑/생활/기타 중 하나\", \"type\": \"income 또는 expense\"}"
                 }
-
-                val prompt = "이 영수증 또는 결제 내역 이미지에서 정보를 추출해줘. JSON 형식으로 응답해: {\"storeName\": \"상점명\", \"amount\": 12345, \"category\": \"식비/카페/교통/쇼핑/생활/기타 중 하나\", \"type\": \"income 또는 expense\"}"
 
                 val inputContent = content {
                     image(bitmap)
@@ -201,8 +175,13 @@ class LedgerViewModel(
                 val response = getGenerativeModel().generateContent(inputContent)
                 val responseText = response.text ?: ""
                 
-                val result = Json.decodeFromString<AiTransactionResult>(responseText)
-                onResult(result)
+                if (isOcr) {
+                    val result = Json.decodeFromString<OcrResult>(responseText)
+                    onResult(AiTransactionResult(storeName = result.text, amount = 0, category = "기타", type = "expense"))
+                } else {
+                    val result = Json.decodeFromString<AiTransactionResult>(responseText)
+                    onResult(result)
+                }
             } catch (e: Exception) {
                 onResult(null)
             }
