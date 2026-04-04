@@ -1,1384 +1,199 @@
 package com.example.smsledger.feature.ledger
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.background
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.launch
-import android.graphics.Bitmap
-import android.net.Uri
-import androidx.compose.ui.platform.LocalContext
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
-import androidx.compose.animation.*
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.example.smsledger.domain.model.Category
 import com.example.smsledger.domain.model.ParsingRule
-import com.example.smsledger.domain.model.Transaction
-import com.example.smsledger.domain.model.TransactionType
-import java.text.NumberFormat
-import java.text.SimpleDateFormat
-import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LedgerScreen(viewModel: LedgerViewModel) {
     val state by viewModel.state.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var currentTab by remember { mutableStateOf(0) } // 0: List, 1: Stats, 2: Settings
 
+    // State for Bottom Sheets
+    var showAddCategoryScreen by remember { mutableStateOf(false) }
+    var showAddRuleScreen by remember { mutableStateOf(false) }
+    var editingCategoryForScreen by remember { mutableStateOf<Category?>(null) }
+    var editingRuleForScreen by remember { mutableStateOf<ParsingRule?>(null) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.systemBarsPadding(),
             containerColor = Color(0xFFF8FAFC),
             topBar = {
-            Surface(
-                color = Color.White,
-                shadowElevation = 0.dp,
-                border = BorderStroke(1.dp, Color(0xFFF1F5F9))
-            ) {
-                Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "SMS 가계부",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Black,
-                                color = Color(0xFF2563EB),
-                                fontSize = 20.sp
-                            )
-                        )
-                        Row {
-                            IconButton(onClick = { currentTab = 0 }) {
-                                Icon(Icons.Default.List, contentDescription = null, tint = if(currentTab == 0) Color(0xFF2563EB) else Color(0xFF94A3B8))
-                            }
-                            IconButton(onClick = { currentTab = 1 }) {
-                                Icon(Icons.Default.BarChart, contentDescription = null, tint = if(currentTab == 1) Color(0xFF2563EB) else Color(0xFF94A3B8))
-                            }
-                            IconButton(onClick = { currentTab = 2 }) {
-                                Icon(Icons.Default.Settings, contentDescription = null, tint = if(currentTab == 2) Color(0xFF2563EB) else Color(0xFF94A3B8))
-                            }
-                        }
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    ) {
-                        IconButton(
-                            onClick = {
-                                if (state.selectedMonth == 0) viewModel.handleIntent(LedgerIntent.ChangeMonth(11, state.selectedYear - 1))
-                                else viewModel.handleIntent(LedgerIntent.ChangeMonth(state.selectedMonth - 1, state.selectedYear))
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = Color(0xFF2563EB))
-                        }
-                        Text(
-                            "${state.selectedYear}.${String.format("%02d", state.selectedMonth + 1)}",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF1E293B)
-                            ),
-                            modifier = Modifier.padding(horizontal = 4.dp)
-                        )
-                        IconButton(
-                            onClick = {
-                                if (state.selectedMonth == 11) viewModel.handleIntent(LedgerIntent.ChangeMonth(0, state.selectedYear + 1))
-                                else viewModel.handleIntent(LedgerIntent.ChangeMonth(state.selectedMonth + 1, state.selectedYear))
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF2563EB))
-                        }
-                    }
-                }
-            }
-        },
-        floatingActionButton = {
-            if (currentTab == 0) {
-                FloatingActionButton(
-                    onClick = { showAddDialog = true },
-                    containerColor = Color(0xFF2563EB),
-                    contentColor = Color.White,
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = FloatingActionButtonDefaults.elevation(
-                        defaultElevation = 8.dp,
-                        pressedElevation = 12.dp,
-                        hoveredElevation = 10.dp,
-                        focusedElevation = 10.dp
-                    )
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "추가", modifier = Modifier.size(24.dp))
-                }
-            }
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            when (currentTab) {
-                0 -> TransactionListView(state, viewModel)
-                1 -> StatisticsView(state)
-                2 -> SettingsView(state, viewModel)
-            }
-        }
-    }
-
-    AnimatedVisibility(
-        visible = showAddDialog,
-        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-    ) {
-        AddTransactionScreen(
-            state = state,
-            ledgerViewModel = viewModel,
-            onDismiss = { showAddDialog = false },
-            onConfirm = { amount, store, category, type ->
-                viewModel.handleIntent(LedgerIntent.Add(amount, store, category, type))
-                showAddDialog = false
-            },
-            onAddCategory = { viewModel.handleIntent(LedgerIntent.AddCategory(it)) }
-        )
-    }
-}
-}
-
-@Composable
-fun TransactionListView(state: LedgerState, viewModel: LedgerViewModel) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 100.dp)
-    ) {
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Summary Section (Web Design 1:1 Match)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFEFF6FF).copy(alpha = 0.3f))
-                    .padding(20.dp)
-            ) {
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
                     color = Color.White,
                     shadowElevation = 0.dp,
-                    border = BorderStroke(1.dp, Color(0xFFDBEAFE))
-                ) {
-                    Column(modifier = Modifier.padding(20.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("수입", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 1.sp)
-                            Text("+${state.totalIncome.toKoreanCurrency()}", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFF2563EB))
-                        }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("지출", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 1.sp)
-                            Text("-${state.totalExpense.toKoreanCurrency()}", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFFEF4444))
-                        }
-                        HorizontalDivider(color = Color(0xFFF8FAFC), thickness = 1.dp)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("합계", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
-                            Text(
-                                text = state.totalAmount.toKoreanCurrency(),
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Black,
-                                color = if (state.totalAmount >= 0) Color(0xFF2563EB) else Color(0xFFEF4444)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Filter & Search Row (Web Preview Style)
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Category Filter Dropdown
-                var filterExpanded by remember { mutableStateOf(false) }
-                Box {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { filterExpanded = true }
-                    ) {
-                        Text("전체 내역", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B))
-                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${state.transactions.size}건",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF94A3B8)
-                        )
-                    }
-                    DropdownMenu(expanded = filterExpanded, onDismissRequest = { filterExpanded = false }) {
-                        DropdownMenuItem(text = { Text("전체") }, onClick = { filterExpanded = false })
-                        DropdownMenuItem(text = { Text("지출") }, onClick = { filterExpanded = false })
-                        DropdownMenuItem(text = { Text("수입") }, onClick = { filterExpanded = false })
-                    }
-                }
-
-                // Search Bar (Slim & Modern - Integrated)
-                Surface(
-                    modifier = Modifier.weight(1f).height(32.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFFF8FAFC),
                     border = BorderStroke(1.dp, Color(0xFFF1F5F9))
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFFCBD5E1), modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        BasicTextField(
-                            value = state.searchQuery,
-                            onValueChange = { viewModel.handleIntent(LedgerIntent.Search(it)) },
-                            modifier = Modifier.weight(1f),
-                            textStyle = TextStyle(color = Color(0xFF1E293B), fontSize = 11.sp, fontWeight = FontWeight.Medium),
-                            decorationBox = { innerTextField ->
-                                Box(contentAlignment = Alignment.CenterStart) {
-                                    if (state.searchQuery.isEmpty()) {
-                                        Text("검색", color = Color(0xFFCBD5E1), fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                                    }
-                                    innerTextField()
-                                }
-                            },
-                            singleLine = true
-                        )
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        items(state.transactions) { transaction ->
-            TransactionItem(
-                transaction = transaction,
-                categories = state.categories,
-                onCategoryChange = { newCat -> 
-                    viewModel.handleIntent(LedgerIntent.UpdateCategory(transaction, newCat))
-                },
-                onDelete = { viewModel.handleIntent(LedgerIntent.Delete(transaction)) },
-                onAddCategory = { viewModel.handleIntent(LedgerIntent.AddCategory(it)) }
-            )
-        }
-    }
-}
-
-@Composable
-fun FilterTab(text: String, isSelected: Boolean) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = if (isSelected) Color(0xFF1E293B) else Color.Transparent,
-        border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE2E8F0)),
-        modifier = Modifier.height(34.dp)
-    ) {
-        Box(modifier = Modifier.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-            Text(
-                text = text,
-                color = if (isSelected) Color.White else Color(0xFF64748B),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
-@Composable
-fun StatisticsView(state: LedgerState) {
-    val numberFormat = remember { NumberFormat.getCurrencyInstance(Locale.KOREA) }
-    
-    Column(modifier = Modifier.padding(20.dp).fillMaxSize()) {
-        Text(
-            "카테고리별 통계",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-            color = Color(0xFF1E293B)
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        if (state.monthlyStats.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("데이터가 없습니다.", color = Color(0xFF94A3B8))
-            }
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                state.monthlyStats.forEach { (category, amount) ->
-                    item {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            color = Color.White,
-                            border = BorderStroke(1.dp, Color(0xFFF1F5F9))
+                    Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        category,
-                                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                                        color = Color(0xFF1E293B)
-                                    )
-                                    Text(
-                                        numberFormat.format(amount),
-                                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.ExtraBold),
-                                        color = Color(0xFF2563EB)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(12.dp))
-                                val progress = amount.toFloat() / state.totalAmount.coerceAtLeast(1).toFloat()
-                                LinearProgressIndicator(
-                                    progress = { progress },
-                                    modifier = Modifier.fillMaxWidth().height(8.dp),
+                            Text(
+                                "SMS 가계부",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Black,
                                     color = Color(0xFF2563EB),
-                                    trackColor = Color(0xFFEFF6FF),
-                                    strokeCap = StrokeCap.Round
+                                    fontSize = 20.sp
                                 )
+                            )
+                            Row {
+                                IconButton(onClick = { currentTab = 0 }) {
+                                    Icon(Icons.Default.List, contentDescription = null, tint = if(currentTab == 0) Color(0xFF2563EB) else Color(0xFF94A3B8))
+                                }
+                                IconButton(onClick = { currentTab = 1 }) {
+                                    Icon(Icons.Default.BarChart, contentDescription = null, tint = if(currentTab == 1) Color(0xFF2563EB) else Color(0xFF94A3B8))
+                                }
+                                IconButton(onClick = { currentTab = 2 }) {
+                                    Icon(Icons.Default.Settings, contentDescription = null, tint = if(currentTab == 2) Color(0xFF2563EB) else Color(0xFF94A3B8))
+                                }
                             }
                         }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
-@Composable
-fun SettingsView(state: LedgerState, viewModel: LedgerViewModel) {
-    var showAddRuleDialog by remember { mutableStateOf(false) }
-    var editingRule by remember { mutableStateOf<ParsingRule?>(null) }
-    var showAddCategoryDialog by remember { mutableStateOf(false) }
-    var editingCategory by remember { mutableStateOf<Category?>(null) }
-    var categoryToDelete by remember { mutableStateOf<Category?>(null) }
-    var testSms by remember { mutableStateOf("") }
-    var testSender by remember { mutableStateOf("") }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        // Category Management Section
-        item {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "카테고리 관리",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                        color = Color(0xFF1E293B)
-                    )
-                    IconButton(onClick = { 
-                        editingCategory = null
-                        showAddCategoryDialog = true 
-                    }) {
-                        Icon(Icons.Default.AddCircle, contentDescription = "카테고리 추가", tint = Color(0xFF2563EB))
-                    }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    state.categories.forEach { category ->
-                        Surface(
-                            onClick = {
-                                editingCategory = category
-                                showAddCategoryDialog = true
-                            },
-                            color = Color.White,
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 12.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            IconButton(
+                                onClick = {
+                                    if (state.selectedMonth == 0) viewModel.handleIntent(LedgerIntent.ChangeMonth(11, state.selectedYear - 1))
+                                    else viewModel.handleIntent(LedgerIntent.ChangeMonth(state.selectedMonth - 1, state.selectedYear))
+                                },
+                                modifier = Modifier.size(32.dp)
                             ) {
-                                Text(category.name, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF1E293B))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = "삭제",
-                                    modifier = Modifier.size(16.dp).clickable {
-                                        categoryToDelete = category
-                                    },
-                                    tint = Color(0xFF94A3B8)
-                                )
+                                Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = Color(0xFF2563EB))
+                            }
+                            Text(
+                                "${state.selectedYear}.${String.format("%02d", state.selectedMonth + 1)}",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF1E293B)
+                                ),
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+                            IconButton(
+                                onClick = {
+                                    if (state.selectedMonth == 11) viewModel.handleIntent(LedgerIntent.ChangeMonth(0, state.selectedYear + 1))
+                                    else viewModel.handleIntent(LedgerIntent.ChangeMonth(state.selectedMonth + 1, state.selectedYear))
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF2563EB))
                             }
                         }
                     }
-                }
-            }
-        }
-
-        item { HorizontalDivider(color = Color(0xFFF1F5F9)) }
-
-        // SMS Parsing Rules Section
-        item {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "SMS 파싱 규칙",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                        color = Color(0xFF1E293B)
-                    )
-                    IconButton(onClick = { 
-                        editingRule = null
-                        showAddRuleDialog = true 
-                    }) {
-                        Icon(Icons.Default.AddCircle, contentDescription = "규칙 추가", tint = Color(0xFF2563EB))
-                    }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                if (state.parsingRules.isEmpty()) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFF8FAFC),
-                        border = BorderStroke(1.dp, Color(0xFFF1F5F9))
-                    ) {
-                        Text(
-                            "등록된 파싱 규칙이 없습니다.\n우측 상단의 + 버튼을 눌러 추가하세요.",
-                            modifier = Modifier.padding(20.dp),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF94A3B8),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
-                }
-            }
-        }
-
-        items(state.parsingRules) { rule ->
-            ParsingRuleItem(
-                rule = rule,
-                onEdit = { 
-                    editingRule = rule
-                    showAddRuleDialog = true 
-                },
-                onDelete = { viewModel.handleIntent(LedgerIntent.DeleteParsingRule(rule)) },
-                onToggle = { viewModel.handleIntent(LedgerIntent.UpdateParsingRule(rule.copy(isActive = !rule.isActive))) }
-            )
-        }
-
-        item { HorizontalDivider(color = Color(0xFFF1F5F9)) }
-
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(
-                    "파싱 테스트",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                    color = Color(0xFF1E293B)
-                )
-                
-                OutlinedTextField(
-                    value = testSender,
-                    onValueChange = { testSender = it },
-                    label = { Text("발신 번호 (선택사항)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    placeholder = { Text("예: 1588-8100") }
-                )
-
-                OutlinedTextField(
-                    value = testSms,
-                    onValueChange = { testSms = it },
-                    label = { Text("테스트 문자 내용") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    minLines = 3
-                )
-
-                Button(
-                    onClick = { viewModel.handleIntent(LedgerIntent.ParseSms(testSms, testSender.ifBlank { null })) },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("테스트 실행 (DB 저장됨)", fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-        
-        item { Spacer(modifier = Modifier.height(80.dp)) }
-    }
-
-    if (showAddRuleDialog) {
-        AddParsingRuleDialog(
-            rule = editingRule,
-            onDismiss = { showAddRuleDialog = false },
-            onConfirm = { rule ->
-                if (editingRule == null) {
-                    viewModel.handleIntent(LedgerIntent.AddParsingRule(rule))
-                } else {
-                    viewModel.handleIntent(LedgerIntent.UpdateParsingRule(rule.copy(id = editingRule!!.id)))
-                }
-                showAddRuleDialog = false
-            }
-        )
-    }
-
-    if (showAddCategoryDialog) {
-        AddCategoryDialog(
-            category = editingCategory,
-            onDismiss = { showAddCategoryDialog = false },
-            onConfirm = { name ->
-                if (editingCategory == null) {
-                    viewModel.handleIntent(LedgerIntent.AddCategory(name))
-                } else {
-                    viewModel.handleIntent(LedgerIntent.UpdateCategoryName(editingCategory!!, name))
-                }
-                showAddCategoryDialog = false
-            }
-        )
-    }
-
-    if (categoryToDelete != null) {
-        AlertDialog(
-            onDismissRequest = { categoryToDelete = null },
-            title = { Text("카테고리 삭제") },
-            text = { Text("'${categoryToDelete?.name}' 카테고리를 삭제하시겠습니까?\n해당 카테고리의 내역은 '미분류'로 이동됩니다.") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.handleIntent(LedgerIntent.DeleteCategory(categoryToDelete!!))
-                        categoryToDelete = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("삭제")
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { categoryToDelete = null }) { Text("취소") }
-            }
-        )
-    }
-}
-
-@Composable
-fun ParsingRuleItem(
-    rule: ParsingRule,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    onToggle: () -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = if (rule.isActive) Color.White else Color(0xFFF8FAFC),
-        border = BorderStroke(1.dp, if (rule.isActive) Color(0xFFF1F5F9) else Color(0xFFE2E8F0))
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            rule.name,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFF1E293B)
+            floatingActionButton = {
+                if (currentTab == 0) {
+                    FloatingActionButton(
+                        onClick = { showAddDialog = true },
+                        containerColor = Color(0xFF2563EB),
+                        contentColor = Color.White,
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = FloatingActionButtonDefaults.elevation(
+                            defaultElevation = 8.dp,
+                            pressedElevation = 12.dp,
+                            hoveredElevation = 10.dp,
+                            focusedElevation = 10.dp
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            color = if (rule.type == TransactionType.INCOME) Color(0xFFEFF6FF) else Color(0xFFFEF2F2),
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Text(
-                                text = if (rule.type == TransactionType.INCOME) "수입" else "지출",
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = if (rule.type == TransactionType.INCOME) Color(0xFF2563EB) else Color(0xFFEF4444)
-                            )
-                        }
-                    }
-                    if (!rule.senderNumber.isNullOrBlank()) {
-                        Text("발신번호: ${rule.senderNumber}", style = MaterialTheme.typography.labelMedium, color = Color(0xFF64748B))
-                    }
-                }
-                Switch(
-                    checked = rule.isActive, 
-                    onCheckedChange = { onToggle() },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = Color(0xFF2563EB),
-                        uncheckedThumbColor = Color.White,
-                        uncheckedTrackColor = Color(0xFFE2E8F0),
-                        uncheckedBorderColor = Color.Transparent
-                    )
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            Text("금액 패턴: ${rule.amountPattern}", style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
-            Text("상점 패턴: ${rule.storePattern}", style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = onEdit) { Text("수정", color = Color(0xFF2563EB), fontWeight = FontWeight.Bold) }
-                TextButton(onClick = onDelete) { Text("삭제", color = Color(0xFFEF4444), fontWeight = FontWeight.Bold) }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AddParsingRuleDialog(
-    rule: ParsingRule?,
-    onDismiss: () -> Unit,
-    onConfirm: (ParsingRule) -> Unit
-) {
-    var name by remember { mutableStateOf(rule?.name ?: "") }
-    var senderNumber by remember { mutableStateOf(rule?.senderNumber ?: "") }
-    var amountPattern by remember { mutableStateOf(rule?.amountPattern ?: "([0-9,]+)원") }
-    var storePattern by remember { mutableStateOf(rule?.storePattern ?: "원\\s+(.+)") }
-    var type by remember { mutableStateOf(rule?.type ?: TransactionType.EXPENSE) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (rule == null) "파싱 규칙 추가" else "파싱 규칙 수정") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = type == TransactionType.EXPENSE,
-                        onClick = { type = TransactionType.EXPENSE },
-                        label = { Text("지출") },
-                        modifier = Modifier.weight(1f)
-                    )
-                    FilterChip(
-                        selected = type == TransactionType.INCOME,
-                        onClick = { type = TransactionType.INCOME },
-                        label = { Text("수입") },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("규칙 이름 (예: 신한은행)") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = senderNumber, onValueChange = { senderNumber = it }, label = { Text("발신 번호 (선택사항)") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = amountPattern, onValueChange = { amountPattern = it }, label = { Text("금액 정규식") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = storePattern, onValueChange = { storePattern = it }, label = { Text("상점명 정규식") }, modifier = Modifier.fillMaxWidth())
-            }
-        },
-        confirmButton = {
-            Button(onClick = { 
-                onConfirm(ParsingRule(name = name, senderNumber = senderNumber.ifBlank { null }, amountPattern = amountPattern, storePattern = storePattern, type = type)) 
-            }) {
-                Text(if (rule == null) "추가" else "저장")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("취소") }
-        }
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TransactionItem(
-    transaction: Transaction, 
-    categories: List<Category>,
-    onCategoryChange: (String) -> Unit,
-    onDelete: () -> Unit,
-    onAddCategory: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    var showAddCategoryDialog by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp, horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Left Side: Info (Web Design 1:1 Match)
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                // Category Chip (Web Style)
-                Box {
-                    Surface(
-                        onClick = { expanded = true },
-                        color = Color(0xFFEFF6FF),
-                        shape = RoundedCornerShape(6.dp),
-                        modifier = Modifier.wrapContentSize()
                     ) {
-                        val truncatedCategory = if (transaction.category.length > 6) transaction.category.substring(0, 6) + ".." else transaction.category
-                        Text(
-                            truncatedCategory,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold),
-                            color = Color(0xFF2563EB)
-                        )
+                        Icon(Icons.Default.Add, contentDescription = "추가", modifier = Modifier.size(24.dp))
                     }
-                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        categories.forEach { category ->
-                            DropdownMenuItem(
-                                text = { Text(category.name, fontSize = 16.sp) },
-                                onClick = {
-                                    onCategoryChange(category.name)
-                                    expanded = false
-                                }
-                            )
+                }
+            }
+        ) { padding ->
+            Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+                when (currentTab) {
+                    0 -> TransactionListView(state, viewModel)
+                    1 -> StatisticsView(state)
+                    2 -> SettingsView(
+                        state = state, 
+                        viewModel = viewModel,
+                        onShowAddCategory = { category ->
+                            editingCategoryForScreen = category
+                            showAddCategoryScreen = true
+                        },
+                        onShowAddRule = { rule ->
+                            editingRuleForScreen = rule
+                            showAddRuleScreen = true
                         }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                        DropdownMenuItem(
-                            text = { 
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color(0xFF2563EB))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("추가", fontSize = 16.sp, color = Color(0xFF2563EB), fontWeight = FontWeight.Bold)
-                                }
-                            },
-                            onClick = {
-                                expanded = false
-                                showAddCategoryDialog = true
-                            }
-                        )
-                    }
-                }
-                
-                // Store Name
-                Text(
-                    transaction.storeName,
-                    style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
-                    color = Color(0xFF1E293B)
-                )
-                
-                // Date
-                Text(
-                    transaction.date.toFormattedDate(),
-                    style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium),
-                    color = Color(0xFF94A3B8)
-                )
-            }
-            
-            // Right Side: Amount & Delete (Web Design 1:1 Match)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${transaction.amount.toKoreanCurrency()}",
-                    style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Black),
-                    color = if (transaction.type == TransactionType.INCOME) Color(0xFF2563EB) else Color(0xFFEF4444)
-                )
-                IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = "삭제", tint = Color(0xFFE2E8F0), modifier = Modifier.size(16.dp))
+                    )
                 }
             }
         }
-        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF8FAFC), thickness = 1.dp)
-    }
 
-    if (showAddCategoryDialog) {
-        AddCategoryDialog(
-            onDismiss = { showAddCategoryDialog = false },
-            onConfirm = { 
-                onAddCategory(it)
-                onCategoryChange(it)
-            }
-        )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
-@Composable
-fun AddTransactionScreen(
-    state: LedgerState,
-    ledgerViewModel: LedgerViewModel,
-    onDismiss: () -> Unit, 
-    onConfirm: (Long, String, String, TransactionType) -> Unit,
-    onAddCategory: (String) -> Unit
-) {
-    val context = LocalContext.current
-    var amount by remember { mutableStateOf("") }
-    var store by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(state.categories.firstOrNull()?.name ?: "기타") }
-    var type by remember { mutableStateOf(TransactionType.EXPENSE) }
-    var expanded by remember { mutableStateOf(false) }
-    var showAddCategoryDialog by remember { mutableStateOf(false) }
-    var isAiLoading by remember { mutableStateOf(false) }
-    var isOcrMode by remember { mutableStateOf(false) }
-    var ocrResultText by remember { mutableStateOf("") }
-    var showOcrPreview by remember { mutableStateOf(false) }
-
-    // Image/Camera Launchers
-    val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { 
-            isAiLoading = true
-            ledgerViewModel.processImage(context, it, isOcr = isOcrMode) { result ->
-                isAiLoading = false
-                result?.let { res ->
-                    if (isOcrMode) {
-                        ocrResultText = res.storeName // OCR result is stored in storeName in ViewModel
-                        showOcrPreview = true
-                    } else {
-                        amount = res.amount.toString()
-                        store = res.storeName
-                        category = res.category
-                        type = if (res.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
-                    }
-                }
-            }
-        }
-    }
-
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap: Bitmap? ->
-        bitmap?.let {
-            isAiLoading = true
-            ledgerViewModel.processBitmap(it, isOcr = isOcrMode) { result ->
-                isAiLoading = false
-                result?.let { res ->
-                    if (isOcrMode) {
-                        ocrResultText = res.storeName
-                        showOcrPreview = true
-                    } else {
-                        amount = res.amount.toString()
-                        store = res.storeName
-                        category = res.category
-                        type = if (res.type == "income") TransactionType.INCOME else TransactionType.EXPENSE
-                    }
-                }
-            }
-        }
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            cameraLauncher.launch()
-        }
-    }
-
-    fun handleCameraAction() {
-        when (PackageManager.PERMISSION_GRANTED) {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
-                cameraLauncher.launch()
-            }
-            else -> {
-                permissionLauncher.launch(Manifest.permission.CAMERA)
-            }
-        }
-    }
-
-    // Full Screen Overlay (Web Preview Style)
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f))
-            .clickable { onDismiss() },
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        // Content Panel (Web Preview Style: rounded-t-[32px])
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = false) { } // Prevent click through
-                .graphicsLayer {
-                    translationY = 0f
+        AnimatedVisibility(
+            visible = showAddDialog,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+        ) {
+            AddTransactionScreen(
+                state = state,
+                ledgerViewModel = viewModel,
+                onDismiss = { showAddDialog = false },
+                onConfirm = { amount, store, category, type ->
+                    viewModel.handleIntent(LedgerIntent.Add(amount, store, category, type))
+                    showAddDialog = false
                 },
-            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-            color = Color.White
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
-                    .navigationBarsPadding()
-            ) {
-                // Bottom Sheet Handle
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .width(40.dp)
-                        .height(4.dp)
-                        .background(Color(0xFFE2E8F0), RoundedCornerShape(2.dp))
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Header with Close Button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "내역 추가", 
-                        style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.ExtraBold),
-                        color = Color(0xFF1E293B)
-                    )
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            Icons.Default.Add, 
-                            contentDescription = "닫기", 
-                            modifier = Modifier.size(24.dp).rotate(45f),
-                            tint = Color(0xFF94A3B8)
-                        )
-                    }
+                onAddCategory = { 
+                    viewModel.handleIntent(LedgerIntent.AddCategory(it))
                 }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // AI Buttons (Web Preview Style: Vertical)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Smart Recognition (Camera)
-                    Surface(
-                        onClick = { 
-                            isOcrMode = false
-                            handleCameraAction() 
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFEFF6FF),
-                        border = BorderStroke(2.dp, Color(0xFFDBEAFE))
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color.White,
-                                shadowElevation = 2.dp
-                            ) {
-                                Box(modifier = Modifier.padding(8.dp)) {
-                                    if (isAiLoading && !isOcrMode) {
-                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = Color(0xFF2563EB))
-                                    } else {
-                                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF2563EB), modifier = Modifier.size(24.dp))
-                                    }
-                                }
-                            }
-                            Text("스마트 인식", color = Color(0xFF2563EB), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                    }
-                    
-                    // Text Extraction (Camera)
-                    Surface(
-                        onClick = { 
-                            isOcrMode = true
-                            handleCameraAction() 
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFFFFBEB),
-                        border = BorderStroke(2.dp, Color(0xFFFEF3C7))
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color.White,
-                                shadowElevation = 2.dp
-                            ) {
-                                Box(modifier = Modifier.padding(8.dp)) {
-                                    if (isAiLoading && isOcrMode) {
-                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = Color(0xFFD97706))
-                                    } else {
-                                        Icon(Icons.Default.CameraAlt, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(24.dp))
-                                    }
-                                }
-                            }
-                            Text("카메라 OCR", color = Color(0xFFD97706), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                    }
-
-                    // Text Extraction (Album)
-                    Surface(
-                        onClick = { 
-                            isOcrMode = true
-                            galleryLauncher.launch("image/*")
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFF0FDF4),
-                        border = BorderStroke(2.dp, Color(0xFFDCFCE7))
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color.White,
-                                shadowElevation = 2.dp
-                            ) {
-                                Box(modifier = Modifier.padding(8.dp)) {
-                                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(24.dp))
-                                }
-                            }
-                            Text("앨범 OCR", color = Color(0xFF16A34A), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Divider with "또는"
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    HorizontalDivider(modifier = Modifier.fillMaxWidth(), color = Color(0xFFF1F5F9))
-                    Surface(color = Color.White, modifier = Modifier.padding(horizontal = 8.dp)) {
-                        Text("또는", color = Color(0xFFCBD5E1), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Transaction Type Toggle (Web Preview Style: bg-gray-100 rounded-xl p-1)
-                Surface(
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFF1F5F9)
-                ) {
-                    Row(modifier = Modifier.padding(4.dp)) {
-                        Surface(
-                            onClick = { type = TransactionType.EXPENSE },
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (type == TransactionType.EXPENSE) Color.White else Color.Transparent,
-                            shadowElevation = if (type == TransactionType.EXPENSE) 2.dp else 0.dp
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    "지출", 
-                                    color = if (type == TransactionType.EXPENSE) Color(0xFFEF4444) else Color(0xFF94A3B8), 
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
-                        Surface(
-                            onClick = { type = TransactionType.INCOME },
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (type == TransactionType.INCOME) Color.White else Color.Transparent,
-                            shadowElevation = if (type == TransactionType.INCOME) 2.dp else 0.dp
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    "수입", 
-                                    color = if (type == TransactionType.INCOME) Color(0xFF2563EB) else Color(0xFF94A3B8), 
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Store Name Field (Web Style: Bottom Border)
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("상점명", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
-                    BasicTextField(
-                        value = store,
-                        onValueChange = { store = it },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        textStyle = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Medium, color = Color(0xFF1E293B)),
-                        decorationBox = { innerTextField ->
-                            Column {
-                                Box(modifier = Modifier.fillMaxWidth()) {
-                                    if (store.isEmpty()) Text("예: 스타벅스", color = Color(0xFFCBD5E1), fontSize = 18.sp)
-                                    innerTextField()
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 2.dp)
-                            }
-                        }
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Amount Field (Web Style: Bottom Border)
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("금액", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
-                    BasicTextField(
-                        value = amount,
-                        onValueChange = { amount = it },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        textStyle = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B)),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        decorationBox = { innerTextField ->
-                            Column {
-                                Box(modifier = Modifier.fillMaxWidth()) {
-                                    if (amount.isEmpty()) Text("0", color = Color(0xFFCBD5E1), fontSize = 18.sp)
-                                    innerTextField()
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 2.dp)
-                            }
-                        }
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Category Selection (Web Style: Chip Flow)
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("카테고리", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        state.categories.forEach { cat ->
-                            Surface(
-                                onClick = { category = cat.name },
-                                shape = RoundedCornerShape(100.dp),
-                                color = if (category == cat.name) Color(0xFF2563EB) else Color(0xFFF1F5F9)
-                            ) {
-                                Text(
-                                    cat.name,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (category == cat.name) Color.White else Color(0xFF64748B)
-                                )
-                            }
-                        }
-                        Surface(
-                            onClick = { showAddCategoryDialog = true },
-                            shape = RoundedCornerShape(100.dp),
-                            color = Color(0xFFEFF6FF),
-                            border = BorderStroke(1.dp, Color(0xFFDBEAFE))
-                        ) {
-                            Text(
-                                "+ 추가",
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2563EB)
-                            )
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                // Add Button (Web Style: Full Width)
-                Button(
-                    onClick = { onConfirm(amount.toLongOrNull() ?: 0L, store, category, type) },
-                    modifier = Modifier.fillMaxWidth().height(64.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
-                ) {
-                    Text(
-                        "추가하기", 
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    )
-                }
-            }
-        }
-    }
-
-    // OCR Preview Dialog
-    if (showOcrPreview) {
-        Dialog(
-            onDismissRequest = { showOcrPreview = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .fillMaxHeight(0.8f),
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(24.dp)
-                        .fillMaxSize()
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "텍스트 추출 결과",
-                            style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold),
-                            color = Color(0xFF1E293B)
-                        )
-                        IconButton(onClick = { showOcrPreview = false }) {
-                            Icon(Icons.Default.Add, contentDescription = "닫기", modifier = Modifier.rotate(45f), tint = Color(0xFF94A3B8))
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Text(
-                        "아래 텍스트를 길게 눌러 선택하고 복사할 수 있습니다.",
-                        fontSize = 14.sp,
-                        color = Color(0xFF64748B),
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                    
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFF8FAFC),
-                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
-                    ) {
-                        Box(modifier = Modifier.padding(16.dp)) {
-                            androidx.compose.foundation.text.selection.SelectionContainer {
-                                Text(
-                                    text = ocrResultText,
-                                    style = TextStyle(
-                                        fontSize = 16.sp,
-                                        lineHeight = 24.sp,
-                                        color = Color(0xFF334155)
-                                    )
-                                )
-                            }
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    Button(
-                        onClick = { showOcrPreview = false },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
-                    ) {
-                        Text("확인", style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold))
-                    }
-                }
-            }
-        }
-    }
-            }
-        }
-    }
-
-    if (showAddCategoryDialog) {
-        AddCategoryDialog(
-            onDismiss = { showAddCategoryDialog = false },
-            onConfirm = { 
-                onAddCategory(it)
-                category = it
-            }
-        )
-    }
-}
-
-@Composable
-fun AddCategoryDialog(
-    category: Category? = null,
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    var name by remember { mutableStateOf(category?.name ?: "") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (category == null) "카테고리 추가" else "카테고리 수정") },
-        text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("카테고리 이름") },
-                modifier = Modifier.fillMaxWidth()
             )
-        },
-        confirmButton = {
-            Button(onClick = { onConfirm(name) }) {
-                Text(if (category == null) "추가" else "저장")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("취소") }
         }
-    )
-}
 
-// Helper Extension Functions (Web Design 1:1 Match)
-fun Long.toKoreanCurrency(): String {
-    return "₩${String.format("%,d", Math.abs(this))}"
-}
+        AnimatedVisibility(
+            visible = showAddCategoryScreen,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+        ) {
+            AddCategoryScreen(
+                category = editingCategoryForScreen,
+                onDismiss = { showAddCategoryScreen = false },
+                onConfirm = { name ->
+                    if (editingCategoryForScreen == null) {
+                        viewModel.handleIntent(LedgerIntent.AddCategory(name))
+                    } else {
+                        viewModel.handleIntent(LedgerIntent.UpdateCategoryName(editingCategoryForScreen!!, name))
+                    }
+                    showAddCategoryScreen = false
+                }
+            )
+        }
 
-fun Long.toFormattedDate(): String {
-    val sdf = SimpleDateFormat("MM월 dd일 HH:mm", Locale.KOREA)
-    return sdf.format(Date(this))
+        AnimatedVisibility(
+            visible = showAddRuleScreen,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+        ) {
+            AddParsingRuleScreen(
+                rule = editingRuleForScreen,
+                onDismiss = { showAddRuleScreen = false },
+                onConfirm = { rule ->
+                    if (editingRuleForScreen == null) {
+                        viewModel.handleIntent(LedgerIntent.AddParsingRule(rule))
+                    } else {
+                        viewModel.handleIntent(LedgerIntent.UpdateParsingRule(rule.copy(id = editingRuleForScreen!!.id)))
+                    }
+                    showAddRuleScreen = false
+                }
+            )
+        }
+    }
 }
