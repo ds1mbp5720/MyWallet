@@ -43,6 +43,12 @@ private val json = Json {
 }
 
 @Serializable
+data class RegexSuggestion(
+    val amountPattern: String,
+    val storePattern: String
+)
+
+@Serializable
 data class OcrResult(
     val text: String,
     val allTextBlocks: List<String> = emptyList()
@@ -261,6 +267,48 @@ class LedgerViewModel(
                 onResult(result, null)
             } catch (e: Exception) {
                 android.util.Log.e("LedgerViewModel", "AI Error: ${e.message}", e)
+                val errorType = when {
+                    e.message?.contains("Quota exceeded") == true -> "QUOTA_EXCEEDED"
+                    e.message?.contains("API_KEY_MISSING") == true -> "API_KEY_MISSING"
+                    else -> "UNKNOWN_ERROR"
+                }
+                onResult(null, errorType)
+            }
+        }
+    }
+
+    fun generateRegexFromSample(sampleText: String, onResult: (RegexSuggestion?, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val prompt = """
+                    다음 SMS 문자 메시지 샘플에서 금액과 상점명을 추출하기 위한 정규표현식(Regex)을 생성해줘.
+                    금액은 숫자를 캡처 그룹으로 포함해야 하고, 상점명은 해당 텍스트를 캡처 그룹으로 포함해야 해.
+                    
+                    문자 샘플:
+                    "$sampleText"
+                    
+                    응답은 반드시 다음 JSON 형식으로만 해:
+                    {
+                        "amountPattern": "금액 추출용 정규식",
+                        "storePattern": "상점명 추출용 정규식"
+                    }
+                """.trimIndent()
+
+                val response = getGenerativeModel().generateContent(prompt)
+                val responseText = response.text ?: ""
+                
+                val cleanedJson = if (responseText.contains("```json")) {
+                    responseText.substringAfter("```json").substringBeforeLast("```").trim()
+                } else if (responseText.contains("```")) {
+                    responseText.substringAfter("```").substringBeforeLast("```").trim()
+                } else {
+                    responseText.trim()
+                }
+                
+                val result = json.decodeFromString<RegexSuggestion>(cleanedJson)
+                onResult(result, null)
+            } catch (e: Exception) {
+                android.util.Log.e("LedgerViewModel", "Regex AI Error: ${e.message}", e)
                 val errorType = when {
                     e.message?.contains("Quota exceeded") == true -> "QUOTA_EXCEEDED"
                     e.message?.contains("API_KEY_MISSING") == true -> "API_KEY_MISSING"

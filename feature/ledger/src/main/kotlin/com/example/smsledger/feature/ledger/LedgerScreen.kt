@@ -200,6 +200,7 @@ fun LedgerScreen(viewModel: LedgerViewModel) {
         ) {
             AddParsingRuleScreen(
                 rule = editingRuleForScreen,
+                viewModel = viewModel,
                 onDismiss = { showAddRuleScreen = false },
                 onConfirm = { rule ->
                     if (editingRuleForScreen == null) {
