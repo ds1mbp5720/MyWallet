@@ -2,6 +2,8 @@ package com.example.smsledger.feature.ledger
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.smsledger.domain.model.Category
+import com.example.smsledger.domain.model.ParsingRule
 import com.example.smsledger.domain.model.RecurringTransaction
 import com.example.smsledger.domain.model.Transaction
 import com.example.smsledger.domain.model.TransactionType
@@ -508,7 +510,7 @@ class LedgerViewModel(
             // Check sender if specified
             val ruleSender = rule.senderNumber
             if (!ruleSender.isNullOrBlank() && sender != null) {
-                if (!sender.contains(ruleSender)) continue
+                if (!sender.contains(ruleSender as CharSequence)) continue
             }
 
             try {
