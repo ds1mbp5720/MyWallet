@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.smsledger.domain.model.Category
 import com.example.smsledger.domain.model.ParsingRule
+import com.example.smsledger.domain.model.Transaction
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -144,7 +145,11 @@ fun LedgerScreen(viewModel: LedgerViewModel) {
                 when (currentTab) {
                     0 -> TransactionListView(
                         state = state, 
-                        viewModel = viewModel,
+                        onSearch = { viewModel.handleIntent(LedgerIntent.Search(it)) },
+                        onUpdateCategory = { transaction, category -> 
+                            viewModel.handleIntent(LedgerIntent.UpdateCategory(transaction, category))
+                        },
+                        onDelete = { viewModel.handleIntent(LedgerIntent.Delete(it)) },
                         onEdit = { transaction ->
                             editingTransactionForScreen = transaction
                             showAddDialog = true
