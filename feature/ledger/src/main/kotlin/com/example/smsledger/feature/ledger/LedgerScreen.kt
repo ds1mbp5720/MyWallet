@@ -15,6 +15,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.app.Activity
+import androidx.compose.ui.platform.LocalContext
 import com.example.smsledger.domain.model.Category
 import com.example.smsledger.domain.model.ParsingRule
 import com.example.smsledger.domain.model.Transaction
@@ -34,9 +36,12 @@ fun LedgerScreen(viewModel: LedgerViewModel) {
     var editingCategoryForScreen by remember { mutableStateOf<Category?>(null) }
     var editingRuleForScreen by remember { mutableStateOf<ParsingRule?>(null) }
     var editingRecurringForScreen by remember { mutableStateOf<com.example.smsledger.domain.model.RecurringTransaction?>(null) }
+    
+    val context = LocalContext.current
+    var showExitDialog by remember { mutableStateOf(false) }
 
-    // Back button handling for bottom sheets
-    BackHandler(enabled = showAddDialog || showAddCategoryScreen || showAddRuleScreen || showAddRecurringScreen) {
+    // Back button handling for bottom sheets and exit confirmation
+    BackHandler(enabled = true) {
         if (showAddDialog) {
             showAddDialog = false
             editingTransactionForScreen = null
@@ -44,6 +49,8 @@ fun LedgerScreen(viewModel: LedgerViewModel) {
         else if (showAddCategoryScreen) showAddCategoryScreen = false
         else if (showAddRuleScreen) showAddRuleScreen = false
         else if (showAddRecurringScreen) showAddRecurringScreen = false
+        else if (showExitDialog) showExitDialog = false
+        else showExitDialog = true
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -294,5 +301,29 @@ fun LedgerScreen(viewModel: LedgerViewModel) {
                 }
             )
         }
+    }
+
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text("앱 종료", fontWeight = FontWeight.Bold) },
+            text = { Text("앱을 종료하시겠습니까?") },
+            confirmButton = {
+                Button(
+                    onClick = { (context as? Activity)?.finish() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("종료", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
+                    Text("취소", color = Color(0xFF64748B), fontWeight = FontWeight.Medium)
+                }
+            },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = Color.White
+        )
     }
 }
